@@ -31,4 +31,4 @@ export function sceneSettleTarget(layout: SceneLayout, position: number) {
   return position - start < end - position ? start : end;
 }
 
-export const SCENE_COAST_PX_PER_MS = 0.12;
+export const SCENE_COAST_PX_PER_MS = 0.24;

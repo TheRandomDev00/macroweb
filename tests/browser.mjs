@@ -373,8 +373,8 @@ try {
   const first = samples[0], last = samples.at(-1);
   assert.ok(last.y > first.y, 'Continuation must keep moving forward');
   for (const point of samples.slice(1)) {
-    const expected = Math.min(crossing.scenes[1].start, first.y + .12 * (point.time-first.time));
-    assert.ok(Math.abs(point.y-expected) <= 2, 'Continuation must move at 120px/s until the boundary');
+    const expected = Math.min(crossing.scenes[1].start, first.y + .24 * (point.time-first.time));
+    assert.ok(Math.abs(point.y-expected) <= 2, 'Continuation must move at 240px/s until the boundary');
   }
   // Continue forward even though this crossing is much nearer the previous chapter.
   await idle(snapping);
