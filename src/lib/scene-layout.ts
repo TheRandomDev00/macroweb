@@ -18,11 +18,11 @@ export function buildSceneLayout(
   )
     throw new RangeError("Invalid scene dimensions");
   const available = Math.max(1, viewport - 160);
-  const transition = Math.min(360, Math.max(160, viewport * 0.35));
+  const transition = Math.round(Math.min(360, Math.max(160, viewport * 0.35)));
   let start = 0;
   const scenes = heights.map((height) => {
     const travel = Math.max(0, height - available);
-    const hold = travel + Math.min(160, viewport * 0.16);
+    const hold = travel + Math.round(Math.min(160, viewport * 0.16));
     const scene = {
       start,
       hold,

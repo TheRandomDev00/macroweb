@@ -17,6 +17,8 @@ import {
   sampleScene,
   type SceneLayout,
 } from "@/lib/scene-layout";
+import { createSceneMotion } from "@/lib/scene-motion";
+import { sampleSceneSwap } from "@/lib/scene-transitions";
 import { resolveSceneViewport } from "@/lib/scene-viewport";
 import { SceneProgressContext, SectionMotionContext } from "./SceneContext";
 import { usePageScroll } from "./PageScrollProvider";
@@ -41,6 +43,7 @@ export function SceneStack({
   const navigate = useRef<(index: number, smooth?: boolean) => void>(() => {});
   const [pinned, setPinned] = useState(false);
   const [active, setActive] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
   const scroll = usePageScroll();
 
   useEffect(() => {
@@ -56,8 +59,10 @@ export function SceneStack({
       initialized = false,
       signature = "";
     let lastActive = -1;
+    let motion: ReturnType<typeof createSceneMotion> | null = null;
     const reset = (reason: string) => {
       failed = true;
+      motion?.destroy();
       port.dataset.mode = "flow";
       port.dataset.sceneFallback = reason;
       port.style.removeProperty("--scene-viewport");
@@ -69,6 +74,7 @@ export function SceneStack({
           panel.style.visibility = "";
           panel.style.pointerEvents = "";
           panel.style.zIndex = "";
+          delete panel.dataset.visible;
         }
       });
       contents.current.forEach((content) => {
@@ -90,19 +96,23 @@ export function SceneStack({
           0,
           Math.min(port.scrollTop, current.maxScroll),
         );
-        const nextActive = activeScene(current, position);
+        const swap = motion?.swap;
+        const nextActive = swap ? swap.to : activeScene(current, position);
         current.scenes.forEach((_, index) => {
           const panel = panels.current[index],
             content = contents.current[index];
           if (!panel || !content) throw new Error("Missing scene nodes");
-          const sample = sampleScene(current, index, position);
+          const sample = swap
+            ? sampleSceneSwap(current, index, swap)
+            : sampleScene(current, index, position);
           if (![sample.opacity, sample.x, sample.y].every(Number.isFinite))
             throw new Error("Invalid scene sample");
           // Commit actual DOM visibility and interaction state together, before enabling pinning.
           content.style.opacity = String(sample.opacity);
           content.style.transform = `translate3d(${sample.x}%, ${sample.y}px, 0)`;
           panel.style.visibility = sample.opacity > 0 ? "visible" : "hidden";
-          const interactive = index === nextActive;
+          panel.dataset.visible = String(sample.opacity > 0);
+          const interactive = !swap && index === nextActive;
           panel.toggleAttribute("inert", !interactive);
           panel.setAttribute("aria-hidden", String(!interactive));
           panel.style.pointerEvents = interactive ? "auto" : "none";
@@ -130,16 +140,11 @@ export function SceneStack({
       }
     };
     const queuePaint = () => {
+      if (motion?.observeScroll()) return;
       if (!paintFrame && !failed) paintFrame = requestAnimationFrame(paint);
     };
     const goTo = (index: number, smooth = true) => {
-      const scene = layout.current?.scenes[index];
-      if (!scene || failed) return;
-      port.scrollTo({
-        top: scene.start,
-        behavior: smooth ? "smooth" : "instant",
-      });
-      queuePaint();
+      motion?.navigate(index, smooth);
     };
     navigate.current = goTo;
     const hashIndex = (hash: string) => {
@@ -206,12 +211,14 @@ export function SceneStack({
         }
         const nextSignature = `${height}:${heights.join(",")}`;
         if (initialized && nextSignature === signature) {
+          motion?.observeScroll();
           paint();
           return;
         }
         signature = nextSignature;
         layout.current = buildSceneLayout(heights, height);
         track.style.height = `${layout.current.maxScroll + height}px`;
+        if (initialized) motion?.observeScroll();
         paint();
         if (failed) return;
         port.dataset.mode = "pinned";
@@ -277,6 +284,12 @@ export function SceneStack({
       history.pushState(null, "", url.hash);
       goTo(index);
     };
+    motion = createSceneMotion({
+      port,
+      getLayout: () => layout.current,
+      render: paint,
+      onRunningChange: setTransitioning,
+    });
     port.addEventListener("scroll", queuePaint, { passive: true });
     port.addEventListener("load", queueMeasure, true);
     window.addEventListener("resize", queueMeasure);
@@ -346,7 +359,7 @@ export function SceneStack({
         <nav className="scene-navigation" aria-label="Page sections">
           <button
             aria-label="Previous section"
-            disabled={active === 0}
+            disabled={transitioning || active === 0}
             onClick={() => goTo(active - 1)}
           >
             <ArrowUp size={14} />
@@ -358,7 +371,7 @@ export function SceneStack({
           </span>
           <button
             aria-label="Next section"
-            disabled={active === items.length - 1}
+            disabled={transitioning || active === items.length - 1}
             onClick={() => goTo(active + 1)}
           >
             <ArrowDown size={14} />

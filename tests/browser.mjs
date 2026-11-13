@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createStaticServer } from "../scripts/serve.mjs";
 import postcss from "postcss";
+import { buildSceneLayout } from "../src/lib/scene-layout.ts";
 
 // Termux Chromium speaks desktop CDP; Playwright's cache-path lookup omits Android.
 // This is isolated to the test process and does not change production code.
@@ -65,6 +66,12 @@ function snapshot() {
       Math.abs(
         stage.getBoundingClientRect().top - root.getBoundingClientRect().top,
       ) <= 2,
+    transition: root.dataset.transition,
+    visiblePanels: [...document.querySelectorAll(".scene-panel")].filter(
+      (panel) =>
+        getComputedStyle(panel).visibility !== "hidden" &&
+        Number(panel.querySelector(".scene-content").style.opacity) > 0.01,
+    ).length,
     active: [...document.querySelectorAll(".scene-panel")].find(
       (node) => !node.hasAttribute("inert"),
     )?.dataset.sceneIndex,
@@ -86,11 +93,20 @@ async function open(page) {
   await page.waitForTimeout(900);
   await settle(page);
 }
+async function idle(page) {
+  await page.waitForFunction(
+    () =>
+      document.querySelector(".scene-stack").dataset.transition !== "running",
+  );
+  await settle(page);
+}
 async function scrollTo(page, top) {
+  await idle(page);
   await page
     .locator(".scene-stack")
     .evaluate((root, y) => root.scrollTo({ top: y, behavior: "instant" }), top);
   await settle(page);
+  await idle(page);
 }
 
 try {
@@ -131,7 +147,7 @@ try {
     await page.waitForFunction(
       () => document.querySelector(".scene-stack").scrollTop > 20,
     );
-    await settle(page);
+    await idle(page);
     assert.ok(
       (await page.locator(".site-header").getAttribute("class")).includes(
         "is-compact",
@@ -139,21 +155,35 @@ try {
     );
     await scrollTo(page, 0);
     const reached = new Set();
-    for (
-      let y = 0;
-      y <= initial.max;
-      y += Math.max(65, viewport.height * 0.26)
-    ) {
-      await scrollTo(page, y);
-      const state = await page.evaluate(snapshot);
-      assert.equal(
-        state.mode,
-        "pinned",
-        `Pinning lost at ${y}: ${state.fallback}`,
-      );
-      assert.ok(state.aligned, `Stage drift at ${y}`);
-      assert.ok(state.visible.length, `Blank viewport at ${y}`);
-      reached.add(state.active);
+    const metrics = await page.locator(".scene-stack").evaluate((root) => ({
+      height: root.clientHeight,
+      heights: [...root.querySelectorAll(".scene-content")].map(
+        (node) => node.offsetHeight,
+      ),
+    }));
+    const reading = buildSceneLayout(metrics.heights, metrics.height);
+    for (const scene of reading.scenes) {
+      for (
+        let y = scene.start;
+        y <= scene.start + scene.hold;
+        y += Math.max(65, viewport.height * 0.26)
+      ) {
+        await scrollTo(page, y);
+        const state = await page.evaluate(snapshot);
+        assert.equal(
+          state.mode,
+          "pinned",
+          `Pinning lost at ${y}: ${state.fallback}`,
+        );
+        assert.ok(state.aligned, `Stage drift at ${y}`);
+        assert.ok(state.visible.length, `Blank viewport at ${y}`);
+        assert.equal(
+          state.visiblePanels,
+          1,
+          "A settled scroll position must show only one scene",
+        );
+        reached.add(state.active);
+      }
     }
     await scrollTo(page, initial.max);
     reached.add((await page.evaluate(snapshot)).active);
@@ -175,6 +205,24 @@ try {
     assert.equal(await page.locator(".product-card").count(), 1);
     await page.getByRole("button", { name: "Monthly", exact: true }).click();
     assert.match(await page.locator(".product-price").innerText(), /2.99/);
+    // Read to the bottom of the filtered catalogue before clicking its final control.
+    // Browser scrollIntoView cannot infer this app's virtual content travel.
+    const filteredMetrics = await page
+      .locator(".scene-stack")
+      .evaluate((root) => ({
+        height: root.clientHeight,
+        heights: [...root.querySelectorAll(".scene-content")].map(
+          (node) => node.offsetHeight,
+        ),
+      }));
+    const filteredLayout = buildSceneLayout(
+      filteredMetrics.heights,
+      filteredMetrics.height,
+    );
+    await scrollTo(
+      page,
+      filteredLayout.scenes[2].start + filteredLayout.scenes[2].travel,
+    );
     await page.locator(".product-view").click();
     await page.locator("dialog[open]").waitFor({ state: "visible" });
     assert.equal(await page.locator("dialog[open]").count(), 1);
@@ -200,6 +248,104 @@ try {
     );
     await page.close();
   }
+
+  const snapping = await browser.newPage({
+    viewport: { width: 1440, height: 900 },
+  });
+  await open(snapping);
+  await snapping.evaluate(() => {
+    const port = document.querySelector(".scene-stack");
+    window.swapEvents = [];
+    new MutationObserver(() =>
+      window.swapEvents.push({
+        state: port.dataset.transition,
+        time: performance.now(),
+      }),
+    ).observe(port, { attributes: true, attributeFilter: ["data-transition"] });
+  });
+  await snapping.mouse.move(700, 450);
+  await snapping.mouse.wheel(0, 900);
+  await snapping.waitForFunction(
+    () =>
+      document.querySelector(".scene-stack").dataset.transition === "running",
+  );
+  // A trackpad tail continues beyond the animation, but must not skip another section.
+  await snapping.evaluate(() => {
+    window.wheelTail = setInterval(
+      () =>
+        document.querySelector(".scene-stack").dispatchEvent(
+          new WheelEvent("wheel", {
+            deltaY: 900,
+            bubbles: true,
+            cancelable: true,
+          }),
+        ),
+      25,
+    );
+  });
+  await idle(snapping);
+  await snapping.waitForTimeout(300);
+  await snapping.evaluate(() => clearInterval(window.wheelTail));
+  const snapped = await snapping.evaluate(snapshot);
+  assert.equal(snapped.active, "1");
+  assert.equal(snapped.visiblePanels, 1);
+  const events = await snapping.evaluate(() => window.swapEvents);
+  const began = events.find((e) => e.state === "running"),
+    ended = events.find((e) => e.state === "idle");
+  assert.ok(
+    ended.time - began.time >= 650 && ended.time - began.time < 1800,
+    "Swap must use the fixed animation duration",
+  );
+  await snapping.waitForTimeout(220);
+  await snapping.mouse.wheel(0, 900);
+  await settle(snapping);
+  await idle(snapping);
+  assert.equal((await snapping.evaluate(snapshot)).active, "2");
+  // Even a direct scroll into the middle of the blend must automatically finish.
+  const gaps = await snapping.locator(".scene-stack").evaluate((root) => ({
+    height: root.clientHeight,
+    heights: [...root.querySelectorAll(".scene-content")].map(
+      (node) => node.offsetHeight,
+    ),
+  }));
+  const gapLayout = buildSceneLayout(gaps.heights, gaps.height);
+  await scrollTo(
+    snapping,
+    gapLayout.scenes[2].start +
+      gapLayout.scenes[2].hold +
+      gapLayout.transition / 2,
+  );
+  assert.equal((await snapping.evaluate(snapshot)).visiblePanels, 1);
+  await snapping.close();
+  console.log(
+    "PASS fixed-duration swaps, momentum lock, and automatic completion of partial transitions",
+  );
+
+  const touchPage = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  await open(touchPage);
+  const touchSession = await touchPage.context().newCDPSession(touchPage);
+  await touchSession.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: 195, y: 650 }],
+  });
+  await touchSession.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: 195, y: 180 }],
+  });
+  await touchSession.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await settle(touchPage);
+  await idle(touchPage);
+  assert.equal((await touchPage.evaluate(snapshot)).active, "1");
+  assert.equal((await touchPage.evaluate(snapshot)).visiblePanels, 1);
+  await touchPage.close();
+  console.log("PASS native touch swipe completes on one fully visible scene");
 
   // Real ResizeObserver and visualViewport events; do not replace them with no-op mocks.
   const resized = await browser.newPage({

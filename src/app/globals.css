@@ -3461,3 +3461,10 @@ main {
     right: 12px;
   }
 }
+
+/* Promote only the two participating scenes while their timed swap is running. */
+.scene-stack[data-transition="running"]
+  .scene-panel[data-visible="true"]
+  .scene-content {
+  will-change: transform, opacity;
+}
