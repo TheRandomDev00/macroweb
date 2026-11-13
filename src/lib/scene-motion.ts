@@ -22,6 +22,10 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     lastActivity = 0;
   let velocity = 0;
   const speed = createScrollSpeed();
+  const wheelSpeed = createScrollSpeed();
+  let lastWheelTime = -Infinity,
+    wheelVelocity = 0;
+  let expectedPosition = port.scrollTop;
   let lastPosition = port.scrollTop,
     lastSampleTime = performance.now();
   let animation: {
@@ -64,6 +68,9 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       animation.origin +
       (destination - animation.origin) *
         (animation.linear ? phase : smoothSceneEase(phase));
+    expectedPosition = port.scrollTop;
+    lastPosition = port.scrollTop;
+    lastSampleTime = time;
     render();
     if (destroyed || !animation) return;
     if (phase < 1) frame = requestAnimationFrame(tick);
@@ -105,11 +112,14 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     }
     const layout = getLayout()!;
     const gap = sceneGap(layout, port.scrollTop);
-    if (!gap || !Number.isFinite(velocity) || velocity === 0) {
+    // Native smooth-scroll tails must not replace the recent wheel gesture estimate.
+    const carryVelocity =
+      performance.now() - lastWheelTime < 500 ? wheelVelocity : velocity;
+    if (!gap || !Number.isFinite(carryVelocity) || carryVelocity === 0) {
       markState();
       return;
     }
-    const forward = velocity > 0;
+    const forward = carryVelocity > 0;
     const destination = () => {
       const latest = getLayout()!;
       return forward
@@ -119,7 +129,7 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     // Preserve direction even before the midpoint; do not snap to the nearer chapter.
     const duration = continuationDuration(
       destination() - port.scrollTop,
-      velocity,
+      carryVelocity,
     );
     animateTo(destination, duration, true);
   };
@@ -148,11 +158,28 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       !event.ctrlKey &&
       Math.abs(event.deltaY) >= Math.abs(event.deltaX) &&
       event.deltaY
-    )
+    ) {
+      const now = performance.now();
+      const elapsed = now - lastWheelTime;
+      const unit =
+        event.deltaMode === 1
+          ? 16
+          : event.deltaMode === 2
+            ? port.clientHeight
+            : 1;
+      wheelVelocity = wheelSpeed.record(
+        event.deltaY * unit,
+        now - (elapsed > 200 ? 16.67 : Math.max(1, elapsed)),
+        now,
+      );
+      lastWheelTime = now;
       activity();
+    }
   };
   const touchStart = () => {
     touching = true;
+    wheelVelocity = 0;
+    lastWheelTime = -Infinity;
     activity();
   };
   const touchMove = () => activity();
@@ -205,6 +232,8 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     clearIdle();
     cancel();
     speed.clear();
+    wheelSpeed.clear();
+    lastWheelTime = -Infinity;
     velocity = 0;
     if (smooth) animateTo(destination, SCENE_TRANSITION_MS);
     else {
@@ -226,7 +255,20 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     navigate,
     observeScroll() {
       if (!enabled()) return false;
-      if (animation) return true;
+      if (animation) {
+        // Scroll events from our own RAF writes are ignored; late native movement takes over.
+        if (Math.abs(port.scrollTop - expectedPosition) <= 1) return true;
+        const nativePosition = port.scrollTop;
+        const nativeDelta = nativePosition - lastPosition;
+        const now = performance.now();
+        velocity = speed.record(
+          nativeDelta,
+          now - Math.max(1, now - lastSampleTime),
+          now,
+        );
+        cancel();
+        lastActivity = now;
+      }
       const now = performance.now(),
         delta = port.scrollTop - lastPosition;
       if (delta !== 0) {

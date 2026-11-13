@@ -122,6 +122,31 @@ try {
         : []),
     ],
   });
+  {
+  const page = await browser.newPage({viewport:{width:1440,height:900}});
+  await open(page);
+  const metrics = await page.locator('.scene-stack').evaluate(root => ({heights:[...root.querySelectorAll('.scene-content')].map(x=>x.offsetHeight),height:root.clientHeight}));
+  const layout=buildSceneLayout(metrics.heights,metrics.height), boundary=layout.scenes[0].hold;
+  await scrollTo(page,boundary);
+  await page.mouse.move(700,450);
+  for (const delta of [8,8,8,8,1]) {await page.mouse.wheel(0,delta);await page.waitForTimeout(30);}
+  const released=(await page.evaluate(snapshot)).y;
+  await page.waitForTimeout(180);
+  const carried=(await page.evaluate(snapshot)).y;
+  assert.ok(carried >= layout.scenes[1].start || carried>released+5, `Momentum lost: ${released} -> ${carried}`);
+  await idle(page);
+  assert.ok((await page.evaluate(snapshot)).y >= layout.scenes[1].start - 1);
+  // Late native movement must interrupt continuation rather than being overwritten.
+  await scrollTo(page,boundary);
+  await page.mouse.wheel(0,5);
+  await page.waitForFunction(()=>document.querySelector('.scene-stack').dataset.transition==='running');
+  const late=await page.locator('.scene-stack').evaluate(root=>{root.scrollTop+=20;return root.scrollTop});
+  await settle(page);
+  assert.ok((await page.evaluate(snapshot)).y>=late);
+  await idle(page);
+  console.log('PASS actual wheel gesture carries recent speed after a slow final input; late native movement remains in control');
+  await page.close();
+  }
   for (const viewport of [
     { width: 1440, height: 900 },
     { width: 390, height: 844 },
