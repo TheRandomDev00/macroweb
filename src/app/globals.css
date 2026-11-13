@@ -3489,3 +3489,17 @@ main {
   .section-padding {
   padding-block: 56px;
 }
+
+@font-face {
+  font-family: "Nunito Wordmark";
+  src: url("/fonts/nunito-italic.ttf") format("truetype");
+  font-style: italic;
+  font-weight: 200 1000;
+  font-display: swap;
+}
+.site-header .brand > span:first-of-type {
+  font-family: "Nunito Wordmark", sans-serif;
+  font-style: italic;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}

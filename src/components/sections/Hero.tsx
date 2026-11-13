@@ -1,9 +1,7 @@
 import {
-  ArrowDown,
   ArrowRight,
   ArrowUpRight,
   Check,
-  Mouse,
   Sparkles,
 } from "lucide-react";
 import { GradientOrbs } from "@/components/effects/GradientOrbs";
@@ -18,7 +16,7 @@ export function Hero() {
       <div className="hero-inner page-width">
         <div className="hero-copy">
           <div className="eyebrow hero-eyebrow">
-            <span className="status-dot" /> LESS GRIND. MORE GAME.
+            <span className="status-dot" /> EXCEL.
           </div>
           <h1 id="hero-title" className="hero-title-entrance">
             INFORMAAL
@@ -52,13 +50,13 @@ export function Hero() {
           </Entrance>
           <div className="hero-perks">
             <span>
-              <Check size={13} /> Easy to set up
+              <Check size={13} /> Regularly updated
             </span>
             <span>
-              <Check size={13} /> Free tools available
+              <Check size={13} /> Extensive dev support
             </span>
             <span>
-              <Check size={13} /> Made for players
+              <Check size={13} /> Highly optimized
             </span>
           </div>
         </div>
@@ -71,14 +69,6 @@ export function Hero() {
             <ScreenshotCarousel />
           </Entrance>
         </div>
-      </div>
-      <div className="hero-bottom page-width">
-        <a href="#store">
-          <Mouse size={15} />
-          <span>SCROLL TO DISCOVER</span>
-          <ArrowDown size={12} />
-        </a>
-        <span>THE LITTLE THINGS. AUTOMATED.</span>
       </div>
     </section>
   );
