@@ -1,3 +1,4 @@
+import { createScrollSpeed, continuationDuration } from "./scroll-speed";
 import type { SceneLayout } from "./scene-layout";
 import {
   SCENE_IDLE_MS,
@@ -20,6 +21,7 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     touching = false,
     lastActivity = 0;
   let velocity = 0;
+  const speed = createScrollSpeed();
   let lastPosition = port.scrollTop,
     lastSampleTime = performance.now();
   let animation: {
@@ -115,8 +117,10 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
         : latest.scenes[gap.from].start + latest.scenes[gap.from].hold;
     };
     // Preserve direction even before the midpoint; do not snap to the nearer chapter.
-    const duration =
-      Math.abs(destination() - port.scrollTop) / Math.abs(velocity);
+    const duration = continuationDuration(
+      destination() - port.scrollTop,
+      velocity,
+    );
     animateTo(destination, duration, true);
   };
   const schedule = () => {
@@ -200,6 +204,8 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     };
     clearIdle();
     cancel();
+    speed.clear();
+    velocity = 0;
     if (smooth) animateTo(destination, SCENE_TRANSITION_MS);
     else {
       port.scrollTop = destination();
@@ -225,7 +231,11 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
         delta = port.scrollTop - lastPosition;
       if (delta !== 0) {
         const elapsed = now - lastSampleTime;
-        velocity = delta / (elapsed > 200 ? 16.67 : Math.max(1, elapsed));
+        velocity = speed.record(
+          delta,
+          now - (elapsed > 200 ? 16.67 : Math.max(1, elapsed)),
+          now,
+        );
         lastPosition = port.scrollTop;
         lastSampleTime = now;
         lastActivity = now;
