@@ -68,7 +68,9 @@ test("settling ease decelerates toward its endpoint and stays monotonic", () => 
   assert.equal(smoothSceneEase(0), 0);
   assert.equal(smoothSceneEase(1), 1);
   assert.ok(smoothSceneEase(0.5) > 0.8);
-  assert.ok(smoothSceneEase(0.25) > smoothSceneEase(0.75) - smoothSceneEase(0.5));
+  assert.ok(
+    smoothSceneEase(0.25) > smoothSceneEase(0.75) - smoothSceneEase(0.5),
+  );
   assert.ok(1 - smoothSceneEase(0.99) < 0.00002);
   let previous = 0;
   for (let t = 0; t <= 1; t += 0.01) {
@@ -76,4 +78,21 @@ test("settling ease decelerates toward its endpoint and stays monotonic", () => 
     assert.ok(current >= previous && current <= 1);
     previous = current;
   }
+});
+
+test("automatic scrolling accelerates smoothly to 240px/s", async () => {
+  const { sceneCoastDistance } =
+    await import("../src/lib/scene-transitions.ts");
+  assert.equal(sceneCoastDistance(0), 0);
+  assert.ok(sceneCoastDistance(10) < 0.01);
+  assert.equal(sceneCoastDistance(300), 36);
+  assert.ok(
+    Math.abs(sceneCoastDistance(1300) - sceneCoastDistance(300) - 240) < 1e-9,
+  );
+  const step = 0.01;
+  assert.ok(
+    Math.abs(
+      (sceneCoastDistance(300) - sceneCoastDistance(300 - step)) / step - 0.24,
+    ) < 0.0001,
+  );
 });

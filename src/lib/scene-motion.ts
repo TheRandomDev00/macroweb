@@ -1,6 +1,7 @@
 import type { SceneLayout } from "./scene-layout";
 import {
   SCENE_IDLE_MS,
+  sceneCoastDistance,
   SCENE_COAST_PX_PER_MS,
   SCENE_TRANSITION_MS,
   sceneGap,
@@ -56,8 +57,14 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       cancel();
       return;
     }
-    const phase = Math.min(1, (time - animation.started) / animation.duration);
     const destination = animation.destination();
+    const distance = Math.abs(destination - animation.origin);
+    const phase = animation.linear
+      ? Math.min(
+          1,
+          sceneCoastDistance(time - animation.started) / Math.max(1, distance),
+        )
+      : Math.min(1, (time - animation.started) / animation.duration);
     port.scrollTop =
       animation.origin +
       (destination - animation.origin) *

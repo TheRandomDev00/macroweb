@@ -372,9 +372,11 @@ try {
   }));
   const first = samples[0], last = samples.at(-1);
   assert.ok(last.y > first.y, 'Continuation must keep moving forward');
-  for (const point of samples.slice(1)) {
-    const expected = Math.min(crossing.scenes[1].start, first.y + .24 * (point.time-first.time));
-    assert.ok(Math.abs(point.y-expected) <= 2, 'Continuation must move at 240px/s until the boundary');
+  for (let i=1;i<samples.length;i++) {
+    const previous=samples[i-1], point=samples[i];
+    const delta=point.y-previous.y;
+    assert.ok(delta>=0 && delta<=.24*(point.time-previous.time)+2,
+      'Automatic continuation must accelerate without exceeding 240px/s');
   }
   // Continue forward even though this crossing is much nearer the previous chapter.
   await idle(snapping);

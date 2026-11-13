@@ -32,3 +32,12 @@ export function sceneSettleTarget(layout: SceneLayout, position: number) {
 }
 
 export const SCENE_COAST_PX_PER_MS = 0.24;
+
+/** Integrated smoothstep velocity: zero at rest, full speed after 300 ms. */
+export function sceneCoastDistance(elapsed: number) {
+  const time = Math.max(0, elapsed),
+    ramp = 300;
+  if (time >= ramp) return SCENE_COAST_PX_PER_MS * (time - ramp / 2);
+  const t = time / ramp;
+  return SCENE_COAST_PX_PER_MS * ramp * (t ** 3 - t ** 4 / 2);
+}
