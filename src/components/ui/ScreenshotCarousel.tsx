@@ -54,7 +54,7 @@ export function ScreenshotCarousel() {
             <i />
           </div>
           <span>
-            INFORMAAL / {slide === 0 ? "COMMAND CENTER" : "INTERACTIVE PREVIEW"}
+            DEVREALM / {slide === 0 ? "COMMAND CENTER" : "INTERACTIVE PREVIEW"}
           </span>
           <Settings2 size={12} />
         </div>
@@ -74,8 +74,8 @@ export function ScreenshotCarousel() {
               aria-label="1 of 3: Command center"
             >
               <img
-                src="/images/macro-preview.png"
-                alt="Informaal Anime Vanguards interface with map and routine selectors"
+                src="/images/devrealm-preview.svg"
+                alt="DevRealm Anime Vanguards interface with map and routine selectors"
                 width="1301"
                 height="781"
                 fetchPriority="high"

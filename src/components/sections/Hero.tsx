@@ -19,10 +19,10 @@ export function Hero() {
             <span className="status-dot" /> EXCEL.
           </div>
           <h1 id="hero-title" className="hero-title-entrance">
-            INFORMAAL
+            DEV
             <br />
             <span className="gradient-text">
-              FROG<span className="title-sparkle">✦</span>
+              REALM<span className="title-sparkle">✦</span>
             </span>
           </h1>
           <Entrance delay={0.25}>
@@ -40,7 +40,7 @@ export function Hero() {
               </a>
               <a
                 className="button button-secondary"
-                href="https://discord.com/invite/informaal"
+                href="#community"
                 target="_blank"
                 rel="noopener noreferrer"
               >

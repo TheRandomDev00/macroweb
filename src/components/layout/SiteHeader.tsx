@@ -47,7 +47,7 @@ export function SiteHeader() {
         </nav>
         <a
           className="header-community"
-          href="https://discord.com/invite/informaal"
+          href="#community"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -78,7 +78,7 @@ export function SiteHeader() {
           </a>
         ))}
         <a
-          href="https://discord.com/invite/informaal"
+          href="#community"
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => setOpen(false)}

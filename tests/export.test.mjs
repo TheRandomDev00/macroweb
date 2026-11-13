@@ -19,12 +19,12 @@ test("the static export serves the full page, including its server-rendered cata
   assert.match(response.headers.get("content-type"), /text\/html/);
   assert.equal(await response.text(), html);
   for (const text of [
-    "INFORMAAL",
+    "DEV",
     "Anime Adventures",
     "Anime Vanguards",
-    "Informaal Task",
+    "DevRealm Task",
     "Goodbye, grind.",
-    "Independent interface study.",
+    "© 2026 DevRealm.",
   ])
     assert.ok(html.includes(text), `Missing content: ${text}`);
   assert.equal((html.match(/class="product-card /g) || []).length, 6);

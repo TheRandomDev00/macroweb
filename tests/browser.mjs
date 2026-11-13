@@ -133,7 +133,7 @@ try {
     assert.equal(initial.mode, "pinned", initial.fallback);
     assert.equal(initial.stagePosition, "sticky");
     assert.ok(
-      initial.visible.some((text) => text.includes("INFORMAAL")),
+      initial.visible.some((text) => text.includes("DEV")),
       "Hero must render before scrolling",
     );
     assert.ok(
@@ -192,7 +192,7 @@ try {
     await scrollTo(page, 0);
     assert.ok(
       (await page.evaluate(snapshot)).visible.some((text) =>
-        text.includes("INFORMAAL"),
+        text.includes("DEV"),
       ),
       "Reverse scroll must restore the hero",
     );
@@ -261,7 +261,7 @@ try {
     await scrollTo(page, 0);
     assert.ok(
       (await page.evaluate(snapshot)).visible.some((text) =>
-        text.includes("INFORMAAL"),
+        text.includes("DEV"),
       ),
     );
     console.log(

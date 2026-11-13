@@ -31,7 +31,7 @@ export function Community() {
                 <div className="community-orbit orbit-two" />
                 <span className="community-core">
                   <img
-                    src="/images/informaal.png"
+                    src="/images/devrealm.svg"
                     width="68"
                     height="68"
                     alt=""
@@ -66,7 +66,7 @@ export function Community() {
                 </span>
               </div>
               <div className="community-card-copy">
-                <span className="eyebrow">THE INFORMAAL COMMUNITY</span>
+                <span className="eyebrow">THE DEVREALM COMMUNITY</span>
                 <h3>
                   Good company.
                   <br />
@@ -77,7 +77,7 @@ export function Community() {
                   behind the routines.
                 </p>
                 <a
-                  href="https://discord.com/invite/informaal"
+                  href="#community"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="button button-discord"
@@ -115,7 +115,7 @@ export function Community() {
               </p>
               <a
                 className="text-link"
-                href="https://www.informaal.com/updates"
+                href="#community"
                 target="_blank"
                 rel="noopener noreferrer"
               >

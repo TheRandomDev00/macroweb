@@ -172,11 +172,11 @@ export function ProductSection() {
         <div className="store-footnote">
           <span>Prices shown in USD · Catalogue snapshot, Nov 2026</span>
           <a
-            href="https://www.informaal.com/#store"
+            href="#store"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Explore the official store <ArrowUpRight size={13} />
+            Explore the catalogue <ArrowUpRight size={13} />
           </a>
         </div>
       </div>

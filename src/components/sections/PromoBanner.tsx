@@ -10,7 +10,7 @@ export function PromoBanner() {
           <Sparkles size={15} />
           <span>
             A little less busywork. A lot more possibility.{" "}
-            <strong>Meet Informaal Task — it’s free.</strong>
+            <strong>Meet DevRealm Task — it’s free.</strong>
           </span>
           <ArrowUpRight size={16} />
         </a>

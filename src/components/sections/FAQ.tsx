@@ -54,7 +54,7 @@ export function FAQ() {
         <Reveal className="faq-help">
           <p>Still curious? There’s a community for that.</p>
           <a
-            href="https://discord.com/invite/informaal"
+            href="#community"
             target="_blank"
             rel="noopener noreferrer"
           >

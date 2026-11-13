@@ -13,18 +13,18 @@ export function SiteFooter() {
             </p>
             <div className="footer-socials">
               <a
-                href="https://discord.com/invite/informaal"
+                href="#community"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Informaal Discord"
+                aria-label="DevRealm Discord"
               >
                 <MessageCircle size={18} />
               </a>
               <a
-                href="https://www.youtube.com/@Informaal"
+                href="#community"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Informaal YouTube"
+                aria-label="DevRealm YouTube"
               >
                 <Youtube size={19} />
               </a>
@@ -38,30 +38,30 @@ export function SiteFooter() {
             <a href="#faq">FAQ</a>
           </div>
           <div className="footer-link-group">
-            <h2>INFORMAAL</h2>
+            <h2>DEVREALM</h2>
             <a
-              href="https://www.informaal.com/guides"
+              href="#how-it-works"
               target="_blank"
               rel="noopener noreferrer"
             >
               Guides <ArrowUpRight size={12} />
             </a>
             <a
-              href="https://www.informaal.com/updates"
+              href="#community"
               target="_blank"
               rel="noopener noreferrer"
             >
               Updates <ArrowUpRight size={12} />
             </a>
             <a
-              href="https://www.informaal.com/download"
+              href="#free-tools"
               target="_blank"
               rel="noopener noreferrer"
             >
               Downloads <ArrowUpRight size={12} />
             </a>
             <a
-              href="https://www.informaal.com/terms"
+              href="#faq"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -74,13 +74,13 @@ export function SiteFooter() {
           </a>
         </div>
         <div className="footer-bottom">
-          <p>Independent interface study. Not affiliated with Informaal.</p>
+          <p>© 2026 DevRealm.</p>
           <a
-            href="https://www.informaal.com/"
+            href="#store"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Visit the original <ArrowUpRight size={12} />
+            Explore DevRealm <ArrowUpRight size={12} />
           </a>
           <span>DESIGNED TO KEEP YOU MOVING ✦</span>
         </div>

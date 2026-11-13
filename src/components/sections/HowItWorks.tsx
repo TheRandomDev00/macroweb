@@ -47,7 +47,7 @@ export function HowItWorks() {
           </p>
           <a
             className="text-link"
-            href="https://www.informaal.com/guides"
+            href="#how-it-works"
             target="_blank"
             rel="noopener noreferrer"
           >

@@ -88,21 +88,21 @@ export function ProductDialog({
               <Check size={15} /> Version {product.version}
             </li>
             <li>
-              <ExternalLink size={14} /> Setup and support on the official site
+              <ExternalLink size={14} /> Setup and support on the help section
             </li>
           </ul>
           <a
             className="button button-primary"
-            href="https://www.informaal.com/#store"
+            href="#store"
             target="_blank"
             rel="noopener noreferrer"
           >
-            Continue to official store <ArrowUpRight size={16} />
+            Continue to catalogue <ArrowUpRight size={16} />
           </a>
           <p className="dialog-fine-print">
             Catalogue snapshot · November 13, 2026.
             <br />
-            Confirm current pricing and terms on informaal.com.
+            Confirm current pricing and terms on DevRealm.
           </p>
         </div>
       </div>

@@ -5,10 +5,10 @@ import { ParticleNetwork } from "@/components/effects/ParticleNetwork";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Informaal Frog — Less grind. More game.",
+  title: "DevRealm — Excel.",
   description:
-    "An independent interface study inspired by Informaal Frog. Discover game automation tools through a responsive, scroll-driven experience.",
-  icons: { icon: "/images/informaal.png" },
+    "DevRealm. Discover game automation tools through a responsive, scroll-driven experience.",
+  icons: { icon: "/images/devrealm.svg" },
   robots: { index: false, follow: false },
 };
 

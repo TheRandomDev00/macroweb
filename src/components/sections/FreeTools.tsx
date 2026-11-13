@@ -38,16 +38,16 @@ export function FreeTools() {
                 <span>More living.</span>
               </h3>
               <p>
-                Meet Informaal Task. A simpler way to automate the little things
+                Meet DevRealm Task. A simpler way to automate the little things
                 that fill your day.
               </p>
               <a
-                href="https://www.informaal.com/informaaltask"
+                href="#free-tools"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-link"
               >
-                Explore Informaal Task <ArrowUpRight size={16} />
+                Explore DevRealm Task <ArrowUpRight size={16} />
               </a>
               <div className="task-illustration" aria-hidden="true">
                 <div className="task-illustration-top">
@@ -89,7 +89,7 @@ export function FreeTools() {
                 favorite routine starts here.
               </p>
               <a
-                href="https://www.informaal.com/download"
+                href="#free-tools"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-link"

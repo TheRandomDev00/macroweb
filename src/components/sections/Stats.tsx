@@ -15,7 +15,7 @@ const stats = [
 ];
 export function Stats() {
   return (
-    <section className="stats-section" aria-label="Informaal at a glance">
+    <section className="stats-section" aria-label="DevRealm at a glance">
       <div className="stats-inner page-width">
         {stats.map((stat, i) => (
           <Reveal className="stat" delay={i * 0.08} key={stat.label}>
