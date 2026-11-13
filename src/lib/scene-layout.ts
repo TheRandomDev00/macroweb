@@ -10,17 +10,24 @@ export function buildSceneLayout(
   heights: number[],
   viewport: number,
 ): SceneLayout {
+  if (
+    !Number.isFinite(viewport) ||
+    viewport < 240 ||
+    !heights.length ||
+    heights.some((height) => !Number.isFinite(height) || height <= 0)
+  )
+    throw new RangeError("Invalid scene dimensions");
   const available = Math.max(1, viewport - 160);
-  const transition = Math.max(240, viewport * 0.65);
+  const transition = Math.min(360, Math.max(160, viewport * 0.35));
   let start = 0;
   const scenes = heights.map((height) => {
     const travel = Math.max(0, height - available);
-    const hold = travel + viewport * 0.22;
+    const hold = travel + Math.min(160, viewport * 0.16);
     const scene = {
       start,
       hold,
       travel,
-      center: Math.max(0, (available - height) / 2),
+      center: Math.min(64, Math.max(0, (available - height) / 2)),
     };
     start += hold + transition;
     return scene;
@@ -62,19 +69,4 @@ export function activeScene(layout: SceneLayout, scroll: number) {
     if (scroll >= scene.start - layout.transition / 2) active = index;
   });
   return active;
-}
-
-export function remapSceneScroll(
-  old: SceneLayout,
-  next: SceneLayout,
-  scroll: number,
-) {
-  const index = activeScene(old, scroll);
-  const local = scroll - old.scenes[index].start;
-  return clamp(
-    next.scenes[index].start +
-      clamp(local, -next.transition, next.scenes[index].hold),
-    0,
-    next.maxScroll,
-  );
 }

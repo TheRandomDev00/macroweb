@@ -1,4 +1,3 @@
-"use client";
 import {
   ArrowDown,
   ArrowRight,
@@ -7,38 +6,11 @@ import {
   Mouse,
   Sparkles,
 } from "lucide-react";
-import {
-  animate,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-} from "motion/react";
-import { useEffect } from "react";
-
 import { GradientOrbs } from "@/components/effects/GradientOrbs";
 import { Entrance } from "@/components/motion/Entrance";
 import { ScreenshotCarousel } from "@/components/ui/ScreenshotCarousel";
-import { easeOut } from "@/lib/motion-presets";
 
 export function Hero() {
-  const reduced = useReducedMotion();
-  const titleOpacity = useMotionValue(1);
-  const titleY = useMotionValue(0);
-  useEffect(() => {
-    if (reduced) {
-      titleOpacity.set(1);
-      titleY.set(0);
-      return;
-    }
-    titleOpacity.set(0);
-    titleY.set(24);
-    const fade = animate(titleOpacity, 1, { duration: 0.7, ease: easeOut });
-    const slide = animate(titleY, 0, { duration: 0.8, ease: easeOut });
-    return () => {
-      fade.stop();
-      slide.stop();
-    };
-  }, [reduced, titleOpacity, titleY]);
   return (
     <section id="about" className="hero-stage" aria-labelledby="hero-title">
       <GradientOrbs />
@@ -48,16 +20,13 @@ export function Hero() {
           <div className="eyebrow hero-eyebrow">
             <span className="status-dot" /> LESS GRIND. MORE GAME.
           </div>
-          <motion.h1
-            id="hero-title"
-            style={{ opacity: titleOpacity, y: titleY }}
-          >
+          <h1 id="hero-title" className="hero-title-entrance">
             INFORMAAL
             <br />
             <span className="gradient-text">
               FROG<span className="title-sparkle">✦</span>
             </span>
-          </motion.h1>
+          </h1>
           <Entrance delay={0.25}>
             <p className="hero-description">
               Your time is worth more than the grind.

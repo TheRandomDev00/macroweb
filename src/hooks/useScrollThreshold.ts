@@ -1,25 +1,19 @@
 "use client";
-
 import { useEffect, useState } from "react";
-
+import { usePageScroll } from "@/components/motion/PageScrollProvider";
 export function useScrollThreshold(threshold: number) {
+  const { y } = usePageScroll();
   const [passed, setPassed] = useState(false);
   useEffect(() => {
-    let last = window.scrollY > threshold;
-    setPassed(last);
-    const update = () => {
-      const next = window.scrollY > threshold;
-      if (next !== last) {
-        last = next;
+    let previous = y.get() > threshold;
+    setPassed(previous);
+    return y.on("change", (value) => {
+      const next = value > threshold;
+      if (next !== previous) {
+        previous = next;
         setPassed(next);
       }
-    };
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("pageshow", update);
-    return () => {
-      window.removeEventListener("scroll", update);
-      window.removeEventListener("pageshow", update);
-    };
-  }, [threshold]);
+    });
+  }, [y, threshold]);
   return passed;
 }

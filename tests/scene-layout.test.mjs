@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   activeScene,
   buildSceneLayout,
-  remapSceneScroll,
   sampleScene,
 } from "../src/lib/scene-layout.ts";
 
@@ -39,11 +38,20 @@ test("all of a tall scene is reachable before it fades out", () => {
   assert.equal(sampleScene(layout, 2, layout.maxScroll).opacity, 1);
 });
 
-test("content resize preserves the current scene and clamps reading position", () => {
-  const before = buildSceneLayout([600, 2600, 500], 900);
-  const after = buildSceneLayout([600, 800, 500], 900);
-  const y = before.scenes[1].start + 1500;
-  const mapped = remapSceneScroll(before, after, y);
-  assert.equal(activeScene(after, mapped), 1);
-  assert.equal(mapped, after.scenes[1].start + after.scenes[1].hold);
+test("every scroll position keeps at least one scene visible", () => {
+  const layout = buildSceneLayout([600, 2600, 500, 1200, 300], 844);
+  for (let y = 0; y <= layout.maxScroll; y += 5) {
+    const samples = layout.scenes.map((_, i) => sampleScene(layout, i, y));
+    assert.ok(
+      Math.max(...samples.map((s) => s.opacity)) >= 0.49,
+      `Invisible content at ${y}`,
+    );
+    assert.ok(samples.every((s) => Number.isFinite(s.y)));
+  }
+});
+
+test("invalid dimensions cannot initialize a pinned layout", () => {
+  for (const height of [0, -1, NaN, Infinity])
+    assert.throws(() => buildSceneLayout([600, height], 900), RangeError);
+  assert.throws(() => buildSceneLayout([600], 0), RangeError);
 });

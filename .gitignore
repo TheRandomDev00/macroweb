@@ -5,3 +5,4 @@ out/
 *.tsbuildinfo
 .env*
 .DS_Store
+.qa/

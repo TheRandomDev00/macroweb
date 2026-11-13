@@ -1,6 +1,7 @@
 "use client";
 import { ArrowUpRight, Check, ExternalLink, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Product } from "@/content/landing";
 
 export function ProductDialog({
@@ -13,25 +14,34 @@ export function ProductDialog({
   onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const [container, setContainer] = useState<HTMLElement | null>(null);
+  useEffect(() => setContainer(document.body), []);
   const isMonthly = monthly && product.monthlyPrice !== null;
   const price = isMonthly ? product.monthlyPrice! : product.price;
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !container) return;
     const previousFocus =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    const port = document.querySelector<HTMLElement>(
+      '.scene-stack[data-mode="pinned"]',
+    );
+    const portOverflow = port?.style.overflowY ?? "";
+    if (port) port.style.overflowY = "hidden";
     el.showModal();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = overflow;
       el.close();
-      previousFocus?.focus();
+      if (port) port.style.overflowY = portOverflow;
+      previousFocus?.focus({ preventScroll: true });
     };
-  }, []);
-  return (
+  }, [container]);
+  if (!container) return null;
+  return createPortal(
     <dialog
       ref={ref}
       className="product-dialog"
@@ -96,6 +106,7 @@ export function ProductDialog({
           </p>
         </div>
       </div>
-    </dialog>
+    </dialog>,
+    container,
   );
 }

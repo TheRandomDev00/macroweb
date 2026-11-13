@@ -3323,46 +3323,62 @@ main {
   }
 }
 
-/* One shared viewport: incoming and outgoing scenes occupy the same coordinates. */
-.scene-stack.is-enhanced {
+/* Pin only inside a bounded native scroll root, after measurements succeed. */
+.scene-stack {
+  outline-offset: -3px;
+}
+.scene-stack[data-mode="preparing"],
+.scene-stack[data-mode="pinned"] {
+  position: relative;
+  height: var(--scene-viewport);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  overflow-anchor: none;
+  scrollbar-width: none;
+}
+.scene-stack::-webkit-scrollbar {
+  width: 0;
+}
+.scene-runway {
   position: relative;
 }
-.scene-stack.is-enhanced .scene-stage {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .scene-stage {
   position: sticky;
   top: 0;
-  height: 100svh;
+  height: var(--scene-viewport);
   overflow: clip;
   isolation: isolate;
 }
-.scene-stack.is-enhanced .scene-panel {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .scene-panel {
   position: absolute;
   top: 88px;
   left: 0;
   right: 0;
 }
-.scene-content,
-.scene-content-inner {
+.scene-content {
   min-width: 0;
 }
-.scene-stack.is-enhanced .section-padding {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"])
+  .section-padding {
   padding-block: 32px;
 }
-.scene-stack.is-enhanced .hero-stage {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .hero-stage {
   position: relative;
-  min-height: calc(100svh - 160px);
-  padding-block: 36px 70px;
+  min-height: 0;
+  padding-block: 28px 70px;
   overflow: visible;
 }
-.scene-stack.is-enhanced .hero-bottom {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .hero-bottom {
   bottom: 20px;
 }
-.scene-stack.is-enhanced .stats-section {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .stats-section {
   padding-block: 44px 24px;
 }
-.scene-stack.is-enhanced .closing-cta {
-  padding-block: 60px;
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .closing-cta {
+  padding-block: 50px;
 }
-.scene-stack.is-enhanced .site-footer {
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .site-footer {
   padding-top: 35px;
 }
 .scene-navigation {
@@ -3376,7 +3392,7 @@ main {
   padding: 5px 9px;
   border: 1px solid #8dc4ff25;
   border-radius: 99px;
-  background: #091729c9;
+  background: #091729ed;
   backdrop-filter: blur(16px);
   color: #b9dcff;
 }
@@ -3405,15 +3421,40 @@ main {
   font-size: 8px;
   color: #82a4c8;
 }
+.entrance {
+  animation: entrance-blur 0.8s ease-out backwards;
+  animation-delay: var(--entrance-delay, 0s);
+}
+.hero-title-entrance {
+  animation: entrance-title 0.7s ease-out backwards;
+}
+@keyframes entrance-blur {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes entrance-title {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @media (max-width: 767px) {
-  .scene-stack.is-enhanced .section-heading {
+  .scene-stack:is([data-mode="preparing"], [data-mode="pinned"])
+    .section-heading {
     margin-bottom: 25px;
   }
-  .scene-stack.is-enhanced .hero-inner {
+  .scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .hero-inner {
     gap: 35px;
-  }
-  .scene-stack.is-enhanced .hero-stage {
-    padding-top: 24px;
   }
   .scene-navigation {
     bottom: 10px;

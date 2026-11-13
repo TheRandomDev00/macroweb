@@ -1,9 +1,10 @@
 "use client";
-import { motion, useScroll, useSpring, useReducedMotion } from "motion/react";
+import { motion, useSpring, useReducedMotion } from "motion/react";
+import { usePageScroll } from "./PageScrollProvider";
 import { progressSpring } from "@/lib/motion-presets";
 
 export function ScrollProgress() {
-  const { scrollYProgress } = useScroll({ trackContentSize: true });
+  const { progress: scrollYProgress } = usePageScroll();
   const smoothed = useSpring(scrollYProgress, progressSpring);
   const reduced = useReducedMotion();
   return (
