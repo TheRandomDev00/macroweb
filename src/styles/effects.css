@@ -1,0 +1,107 @@
+.gradient-text {
+  background: linear-gradient(110deg, #f65bcb 4%, #df35ba 45%, #a478f0 95%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.gradient-orbs {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.gradient-orbs span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  animation: float-orb 8s ease-in-out infinite;
+}
+.gradient-orbs span:nth-child(1) {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, #d40ba12e, transparent 70%);
+  top: -14%;
+  left: -8%;
+}
+.gradient-orbs span:nth-child(2) {
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, #8b5cf636, transparent 70%);
+  top: 14%;
+  right: -6%;
+  animation-delay: -3s;
+}
+.gradient-orbs span:nth-child(3) {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #3b82f625, transparent 70%);
+  bottom: -5%;
+  left: 40%;
+  animation-delay: -5s;
+}
+.gradient-orbs--cta span {
+  animation-duration: 10s;
+  filter: blur(85px);
+}
+.gradient-orbs--cta span:nth-child(1) {
+  width: 650px;
+  height: 500px;
+  top: 0;
+  left: 5%;
+  background: radial-gradient(circle, #d40ba13d, transparent 70%);
+}
+.gradient-orbs--cta span:nth-child(2) {
+  right: 5%;
+  top: 0;
+  background: radial-gradient(circle, #8b5cf63a, transparent 70%);
+}
+@keyframes float-orb {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 15px) scale(0.95);
+  }
+}
+@keyframes float-small {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #d40ba110;
+  }
+  50% {
+    box-shadow: 0 0 0 6px #d40ba105;
+  }
+}
+@keyframes grow-bar {
+  from {
+    transform: scaleY(0.4);
+    opacity: 0.4;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
