@@ -16,7 +16,7 @@ import {
   useTransform,
 } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { StarField } from "@/components/effects/StarField";
+
 import { GradientOrbs } from "@/components/effects/GradientOrbs";
 import { Entrance } from "@/components/motion/Entrance";
 import { ScreenshotCarousel } from "@/components/ui/ScreenshotCarousel";
@@ -29,7 +29,7 @@ export function Hero() {
   const reduced = useReducedMotion();
   const { scrollY } = useScroll();
   const scale = useTransform(scrollY, [0, height], [1, 0.94]);
-  const exitOpacity = useTransform(scrollY, [0, height * 0.85], [1, 0.35]);
+  const exitOpacity = useTransform(scrollY, [0, height * 0.7], [1, 0]);
   const titleOpacity = useMotionValue(1);
   const titleY = useMotionValue(0);
   useEffect(() => {
@@ -72,7 +72,6 @@ export function Hero() {
       aria-labelledby="hero-title"
     >
       <GradientOrbs />
-      <StarField />
       <div className="hero-grid-lines" aria-hidden="true" />
       <motion.div
         className="hero-inner page-width"

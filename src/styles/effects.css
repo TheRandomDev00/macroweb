@@ -1,5 +1,5 @@
 .gradient-text {
-  background: linear-gradient(110deg, #f65bcb 4%, #df35ba 45%, #a478f0 95%);
+  background: linear-gradient(110deg, #5fb0f2 4%, #3579df 45%, #78baf0 95%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -19,14 +19,14 @@
 .gradient-orbs span:nth-child(1) {
   width: 550px;
   height: 550px;
-  background: radial-gradient(circle, #d40ba12e, transparent 70%);
+  background: radial-gradient(circle, #115dce2e, transparent 70%);
   top: -14%;
   left: -8%;
 }
 .gradient-orbs span:nth-child(2) {
   width: 550px;
   height: 550px;
-  background: radial-gradient(circle, #8b5cf636, transparent 70%);
+  background: radial-gradient(circle, #60b0f236, transparent 70%);
   top: 14%;
   right: -6%;
   animation-delay: -3s;
@@ -48,12 +48,12 @@
   height: 500px;
   top: 0;
   left: 5%;
-  background: radial-gradient(circle, #d40ba13d, transparent 70%);
+  background: radial-gradient(circle, #115dce3d, transparent 70%);
 }
 .gradient-orbs--cta span:nth-child(2) {
   right: 5%;
   top: 0;
-  background: radial-gradient(circle, #8b5cf63a, transparent 70%);
+  background: radial-gradient(circle, #60b0f23a, transparent 70%);
 }
 @keyframes float-orb {
   0%,
@@ -79,10 +79,10 @@
 @keyframes pulse-dot {
   0%,
   100% {
-    box-shadow: 0 0 0 3px #d40ba110;
+    box-shadow: 0 0 0 3px #115dce10;
   }
   50% {
-    box-shadow: 0 0 0 6px #d40ba105;
+    box-shadow: 0 0 0 6px #115dce05;
   }
 }
 @keyframes grow-bar {

@@ -14,16 +14,16 @@
 }
 :root {
   color-scheme: dark;
-  --background: #14121b;
-  --background-deep: #0d0c14;
-  --surface: #1b1723;
-  --accent: #d40ba1;
-  --pink: #ed57c7;
-  --purple: #8b5cf6;
+  --background: #08111f;
+  --background-deep: #0c0e14;
+  --surface: #171a23;
+  --accent: #338bff;
+  --sky: #5793ed;
+  --cobalt: #60b0f2;
   --blue: #3b82f6;
-  --text: #faf8fc;
-  --muted: #a29aa9;
-  --quiet: #77707f;
+  --text: #f8fafc;
+  --muted: #9aa0a9;
+  --quiet: #70767f;
   --border: rgba(255, 255, 255, 0.08);
   --radius: 18px;
   --content-width: 1320px;

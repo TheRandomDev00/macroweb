@@ -28,10 +28,11 @@ npm run preview
 - Scroll-derived hero scaling/fading when the viewport can safely contain it.
 - Header/promo thresholds initialized from restored scroll positions.
 - Reusable in-view reveals, staggered blur entrances, counters, and a scroll-driven setup timeline.
-- Paused/offscreen-aware Canvas particles and CSS ambient orbs.
+- A persistent blue Canvas particle network with proximity-based connections, hidden-tab suspension, and CSS ambient orbs.
 - Three keyboard-operable carousel previews; an interactive routine preview.
 - Search, category filters, monthly/one-time pricing, empty state, and native product dialogs.
 - Mobile navigation, animated accessible FAQ, anchor navigation, and reduced-motion behavior.
+- Blue accents and translucent, frosted buttons/cards with backdrop blur.
 - Self-hosted fonts and imagery; readable server output if animation JavaScript is unavailable.
 
 Products open detail previews with links to the official store. Checkout, downloads, support, accounts, and billing are provided by the original site, not this project. No fake reviews or fabricated customer activity are included.
