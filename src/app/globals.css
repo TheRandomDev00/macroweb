@@ -3323,16 +3323,100 @@ main {
   }
 }
 
-/* The stationary wrapper prevents transform feedback and sideways page overflow. */
-.scroll-section {
-  overflow: clip;
+/* One shared viewport: incoming and outgoing scenes occupy the same coordinates. */
+.scene-stack.is-enhanced {
+  position: relative;
 }
-.scroll-section-content {
+.scene-stack.is-enhanced .scene-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: clip;
+  isolation: isolate;
+}
+.scene-stack.is-enhanced .scene-panel {
+  position: absolute;
+  top: 88px;
+  left: 0;
+  right: 0;
+}
+.scene-content,
+.scene-content-inner {
   min-width: 0;
 }
-@media (prefers-reduced-motion: reduce) {
-  .scroll-section-content {
-    opacity: 1 !important;
-    transform: none !important;
+.scene-stack.is-enhanced .section-padding {
+  padding-block: 32px;
+}
+.scene-stack.is-enhanced .hero-stage {
+  position: relative;
+  min-height: calc(100svh - 160px);
+  padding-block: 36px 70px;
+  overflow: visible;
+}
+.scene-stack.is-enhanced .hero-bottom {
+  bottom: 20px;
+}
+.scene-stack.is-enhanced .stats-section {
+  padding-block: 44px 24px;
+}
+.scene-stack.is-enhanced .closing-cta {
+  padding-block: 60px;
+}
+.scene-stack.is-enhanced .site-footer {
+  padding-top: 35px;
+}
+.scene-navigation {
+  position: fixed;
+  bottom: 14px;
+  right: 20px;
+  z-index: 45;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid #8dc4ff25;
+  border-radius: 99px;
+  background: #091729c9;
+  backdrop-filter: blur(16px);
+  color: #b9dcff;
+}
+.scene-navigation button {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.scene-navigation button:hover {
+  background: #539cff22;
+}
+.scene-navigation button:disabled {
+  opacity: 0.3;
+}
+.scene-navigation > span {
+  font-family: "Geist Mono", monospace;
+  font-size: 8px;
+  text-align: center;
+  min-width: 65px;
+}
+.scene-current-label {
+  display: block;
+  font-family: "Geist", sans-serif;
+  font-size: 8px;
+  color: #82a4c8;
+}
+@media (max-width: 767px) {
+  .scene-stack.is-enhanced .section-heading {
+    margin-bottom: 25px;
+  }
+  .scene-stack.is-enhanced .hero-inner {
+    gap: 35px;
+  }
+  .scene-stack.is-enhanced .hero-stage {
+    padding-top: 24px;
+  }
+  .scene-navigation {
+    bottom: 10px;
+    right: 12px;
   }
 }

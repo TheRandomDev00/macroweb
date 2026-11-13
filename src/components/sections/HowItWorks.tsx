@@ -1,7 +1,8 @@
 "use client";
 import { ArrowUpRight, Download, Gamepad2, Play } from "lucide-react";
 import { motion, useReducedMotion, useScroll } from "motion/react";
-import { useRef } from "react";
+import { SceneProgressContext } from "@/components/motion/SceneContext";
+import { useContext, useRef } from "react";
 import { SectionLayer } from "@/components/layout/SectionLayer";
 import { Reveal } from "@/components/motion/Reveal";
 const steps = [
@@ -28,6 +29,7 @@ export function HowItWorks() {
     offset: ["start 75%", "end 65%"],
   });
   const reduced = useReducedMotion();
+  const sceneProgress = useContext(SceneProgressContext);
   return (
     <SectionLayer id="how-it-works" className="how-section section-padding">
       <div className="page-width how-grid" ref={ref}>
@@ -54,7 +56,11 @@ export function HowItWorks() {
         </Reveal>
         <div className="how-steps">
           <div className="steps-track" aria-hidden="true">
-            <motion.span style={{ scaleY: reduced ? 1 : scrollYProgress }} />
+            <motion.span
+              style={{
+                scaleY: reduced ? 1 : (sceneProgress ?? scrollYProgress),
+              }}
+            />
           </div>
           {steps.map((step, i) => (
             <Reveal key={step.title} delay={i * 0.08} className="how-step">

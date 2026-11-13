@@ -8,7 +8,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useContext, useEffect, useRef, type ReactNode } from "react";
-import { ScrollSectionContext } from "./ScrollSection";
+import { SectionMotionContext } from "./SceneContext";
 import { easeOut } from "@/lib/motion-presets";
 
 export function Reveal({
@@ -27,7 +27,7 @@ export function Reveal({
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once, margin: "0px 0px -36px 0px" });
   const reduced = useReducedMotion();
-  const sectionOwnsMotion = useContext(ScrollSectionContext);
+  const sectionOwnsMotion = useContext(SectionMotionContext);
   // Visible server output keeps the document readable without JavaScript.
   const opacity = useMotionValue(1);
   const y = useMotionValue(0);

@@ -24,10 +24,10 @@ npm run preview
 
 ## What works
 
-- Sticky hero covered by subsequent sections; document progress with spring smoothing.
-- Scroll-derived hero scaling/fading when the viewport can safely contain it.
+- A shared sticky viewport: sections replace one another with alternating horizontal entrances and simultaneous outgoing fades; document progress with spring smoothing.
+- Long scenes travel vertically through their full content before the next scene enters. Hash links, browser back/forward, and section controls navigate the scroll timeline.
 - Header/promo thresholds initialized from restored scroll positions.
-- Alternating left/right section fades scrubbed directly by viewport scroll progress; keyboard focus reveals content immediately. Hero blur entrances, counters, and a scroll-driven setup timeline.
+- Section replacement is scrubbed directly by document scroll values and reverses when scrolling back. Inactive panels are inert; reduced-motion and no-JavaScript modes retain an ordinary readable vertical page. Hero blur entrances, counters, and a scroll-driven setup timeline.
 - A persistent blue Canvas particle network with proximity-based connections, hidden-tab suspension, and CSS ambient orbs.
 - Three keyboard-operable carousel previews; an interactive routine preview.
 - Search, category filters, monthly/one-time pricing, empty state, and native product dialogs.

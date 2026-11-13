@@ -12,10 +12,8 @@ import {
   motion,
   useMotionValue,
   useReducedMotion,
-  useScroll,
-  useTransform,
 } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 
 import { GradientOrbs } from "@/components/effects/GradientOrbs";
 import { Entrance } from "@/components/motion/Entrance";
@@ -23,32 +21,9 @@ import { ScreenshotCarousel } from "@/components/ui/ScreenshotCarousel";
 import { easeOut } from "@/lib/motion-presets";
 
 export function Hero() {
-  const section = useRef<HTMLElement>(null);
-  const [height, setHeight] = useState(850);
-  const [sticky, setSticky] = useState(false);
   const reduced = useReducedMotion();
-  const { scrollY } = useScroll();
-  const scale = useTransform(scrollY, [0, height], [1, 0.94]);
-  const exitOpacity = useTransform(scrollY, [0, height * 0.7], [1, 0]);
   const titleOpacity = useMotionValue(1);
   const titleY = useMotionValue(0);
-  useEffect(() => {
-    const el = section.current;
-    if (!el) return;
-    const measure = () => {
-      const h = el.getBoundingClientRect().height;
-      setHeight(h);
-      setSticky(window.innerWidth >= 768 && h <= window.innerHeight + 1);
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    window.addEventListener("resize", measure);
-    measure();
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
   useEffect(() => {
     if (reduced) {
       titleOpacity.set(1);
@@ -65,21 +40,10 @@ export function Hero() {
     };
   }, [reduced, titleOpacity, titleY]);
   return (
-    <section
-      id="about"
-      ref={section}
-      className={`hero-stage ${sticky && !reduced ? "can-stick" : ""}`}
-      aria-labelledby="hero-title"
-    >
+    <section id="about" className="hero-stage" aria-labelledby="hero-title">
       <GradientOrbs />
       <div className="hero-grid-lines" aria-hidden="true" />
-      <motion.div
-        className="hero-inner page-width"
-        style={{
-          scale: sticky && !reduced ? scale : 1,
-          opacity: sticky && !reduced ? exitOpacity : 1,
-        }}
-      >
+      <div className="hero-inner page-width">
         <div className="hero-copy">
           <div className="eyebrow hero-eyebrow">
             <span className="status-dot" /> LESS GRIND. MORE GAME.
@@ -138,7 +102,7 @@ export function Hero() {
             <ScreenshotCarousel />
           </Entrance>
         </div>
-      </motion.div>
+      </div>
       <div className="hero-bottom page-width">
         <a href="#store">
           <Mouse size={15} />

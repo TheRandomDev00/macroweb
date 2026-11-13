@@ -1,4 +1,4 @@
-import { ScrollSection } from "@/components/motion/ScrollSection";
+import { SceneStack } from "@/components/motion/SceneStack";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
@@ -21,22 +21,32 @@ export default function Home() {
       <ScrollProgress />
       <SiteHeader />
       <main id="top">
-        <Hero />
-        <div className="covering-content">
-          <ScrollSection direction="left">
+        <SceneStack
+          labels={[
+            "Welcome",
+            "At a glance",
+            "Premium tools",
+            "Free tools",
+            "How it works",
+            "Community",
+            "FAQ",
+            "Get started",
+            "Explore",
+          ]}
+        >
+          <Hero />
+          <div>
             <Stats />
-          </ScrollSection>
-          <PromoBanner />
+            <PromoBanner />
+          </div>
           <ProductSection />
           <FreeTools />
           <HowItWorks />
           <Community />
           <FAQ />
           <ClosingCTA />
-          <ScrollSection direction="right">
-            <SiteFooter />
-          </ScrollSection>
-        </div>
+          <SiteFooter />
+        </SceneStack>
       </main>
     </>
   );
