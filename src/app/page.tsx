@@ -1,3 +1,4 @@
+import { ScrollSection } from "@/components/motion/ScrollSection";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
@@ -22,7 +23,9 @@ export default function Home() {
       <main id="top">
         <Hero />
         <div className="covering-content">
-          <Stats />
+          <ScrollSection direction="left">
+            <Stats />
+          </ScrollSection>
           <PromoBanner />
           <ProductSection />
           <FreeTools />
@@ -30,7 +33,9 @@ export default function Home() {
           <Community />
           <FAQ />
           <ClosingCTA />
-          <SiteFooter />
+          <ScrollSection direction="right">
+            <SiteFooter />
+          </ScrollSection>
         </div>
       </main>
     </>

@@ -27,7 +27,7 @@ npm run preview
 - Sticky hero covered by subsequent sections; document progress with spring smoothing.
 - Scroll-derived hero scaling/fading when the viewport can safely contain it.
 - Header/promo thresholds initialized from restored scroll positions.
-- Reusable in-view reveals, staggered blur entrances, counters, and a scroll-driven setup timeline.
+- Alternating left/right section fades scrubbed directly by viewport scroll progress; keyboard focus reveals content immediately. Hero blur entrances, counters, and a scroll-driven setup timeline.
 - A persistent blue Canvas particle network with proximity-based connections, hidden-tab suspension, and CSS ambient orbs.
 - Three keyboard-operable carousel previews; an interactive routine preview.
 - Search, category filters, monthly/one-time pricing, empty state, and native product dialogs.

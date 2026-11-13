@@ -3322,3 +3322,17 @@ main {
     background: #0e1e34;
   }
 }
+
+/* The stationary wrapper prevents transform feedback and sideways page overflow. */
+.scroll-section {
+  overflow: clip;
+}
+.scroll-section-content {
+  min-width: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-section-content {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
