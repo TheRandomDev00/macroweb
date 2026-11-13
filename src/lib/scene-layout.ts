@@ -55,10 +55,17 @@ export function sampleScene(
     index === layout.scenes.length - 1
       ? 0
       : clamp((scroll - scene.start - scene.hold) / layout.transition);
+  // Smootherstep keeps the depth effect still at both ends of the crossing.
+  const sink = exit * exit * exit * (exit * (exit * 6 - 15) + 10);
   return {
     opacity: enter * (1 - exit),
     x: (index % 2 === 0 ? -18 : 18) * (1 - enter),
-    y: scene.center - clamp(scroll - scene.start, 0, scene.travel),
+    y: scene.center - clamp(scroll - scene.start, 0, scene.travel) + 80 * sink,
+    z: -340 * sink,
+    scale: 1 - 0.1 * sink,
+    rotateX: 8 * sink,
+    blur: 2 * sink,
+    sink,
     progress: clamp((scroll - scene.start) / Math.max(1, scene.hold)),
   };
 }

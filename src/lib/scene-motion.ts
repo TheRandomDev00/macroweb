@@ -1,209 +1,155 @@
-import { activeScene, type SceneLayout } from "./scene-layout";
+import type { SceneLayout } from "./scene-layout";
 import {
+  SCENE_IDLE_MS,
   SCENE_TRANSITION_MS,
   sceneGap,
-  sceneLanding,
+  sceneSettleTarget,
   smoothSceneEase,
-  type SceneSwap,
 } from "./scene-transitions";
 
 type Options = {
   port: HTMLElement;
   getLayout: () => SceneLayout | null;
   render: () => void;
-  onRunningChange: (running: boolean) => void;
 };
 
-/** Lock only scene changes, leaving native scrolling intact inside each scene's reading range. */
-export function createSceneMotion({
-  port,
-  getLayout,
-  render,
-  onRunningChange,
-}: Options) {
-  let swap: SceneSwap | null = null;
+/** Native input is never blocked. Only an idle, unfinished crossing is gently settled. */
+export function createSceneMotion({ port, getLayout, render }: Options) {
   let frame = 0,
-    started = 0,
-    origin = 0,
-    previousOverflow = "";
+    idleTimer: ReturnType<typeof setTimeout> | null = null;
   let destroyed = false,
-    lastPosition = port.scrollTop,
-    lastInput = -Infinity;
-  let inertiaLocked = false,
-    touchY: number | null = null;
-  let pending: number | null = null;
-  let restoreFocus = false;
-  const quietTime = 180;
-
+    touching = false,
+    lastActivity = 0;
+  let animation: {
+    origin: number;
+    destination: () => number;
+    started: number;
+    duration: number;
+  } | null = null;
   const enabled = () =>
     !destroyed && port.dataset.mode === "pinned" && Boolean(getLayout());
-  const stop = () => {
+  const clearIdle = () => {
+    if (idleTimer !== null) clearTimeout(idleTimer);
+    idleTimer = null;
+  };
+  const markState = () => {
+    port.dataset.transition = animation
+      ? "running"
+      : getLayout() && sceneGap(getLayout()!, port.scrollTop)
+        ? "scrolling"
+        : "idle";
+  };
+  const cancel = () => {
     cancelAnimationFrame(frame);
     frame = 0;
-    if (swap) port.style.overflowY = previousOverflow;
-    swap = null;
-    port.dataset.transition = "idle";
+    animation = null;
     port.removeAttribute("aria-busy");
-    onRunningChange(false);
+    markState();
   };
   const tick = (time: number) => {
-    const layout = getLayout();
-    if (destroyed || !swap || !layout) {
-      stop();
+    if (!enabled() || !animation) {
+      cancel();
       return;
     }
-    swap.progress = Math.min(1, (time - started) / SCENE_TRANSITION_MS);
-    const destination = sceneLanding(layout, swap.to, swap.landing);
+    const phase = Math.min(1, (time - animation.started) / animation.duration);
+    const destination = animation.destination();
     port.scrollTop =
-      origin + (destination - origin) * smoothSceneEase(swap.progress);
-    lastPosition = port.scrollTop;
+      animation.origin +
+      (destination - animation.origin) * smoothSceneEase(phase);
     render();
-    if (destroyed || !swap) return;
-    if (swap.progress < 1) {
-      frame = requestAnimationFrame(tick);
-      return;
-    }
-    port.scrollTop = destination;
-    lastPosition = port.scrollTop;
-    stop();
-    if (
-      restoreFocus &&
-      (document.activeElement === document.body ||
-        document.activeElement === document.documentElement)
-    ) {
-      port.focus({ preventScroll: true });
-    }
-    render();
-    if (pending !== null) {
-      const next = pending;
-      pending = null;
-      navigate(next);
+    if (destroyed || !animation) return;
+    if (phase < 1) frame = requestAnimationFrame(tick);
+    else {
+      port.scrollTop = destination;
+      cancel();
+      render();
     }
   };
-  const begin = (from: number, to: number, landing: "start" | "end") => {
-    const layout = getLayout();
-    if (!enabled() || !layout || !layout.scenes[from] || !layout.scenes[to])
-      return;
-    if (swap) {
-      pending = to;
-      return;
-    }
-    const destination = sceneLanding(layout, to, landing);
-    if (from === to && Math.abs(port.scrollTop - destination) < 1) return;
-    origin = port.scrollTop;
-    restoreFocus = port.contains(document.activeElement);
-    swap = {
-      from,
-      to,
-      fromOffset: Math.max(0, origin - layout.scenes[from].start),
-      landing,
-      progress: 0,
-    };
-    previousOverflow = port.style.overflowY;
-    // Cancel native touch/trackpad momentum. Programmatic animation remains available.
-    port.style.overflowY = "hidden";
-    port.dataset.transition = "running";
-    port.setAttribute("aria-busy", "true");
-    inertiaLocked = true;
-    started = performance.now();
-    onRunningChange(true);
-    render();
-    frame = requestAnimationFrame(tick);
-  };
-  function navigate(index: number, animate = true) {
-    const layout = getLayout();
-    if (!enabled() || !layout?.scenes[index]) return;
-    if (swap && animate) {
-      pending = index;
-      return;
-    }
-    if (!animate) {
-      pending = null;
-      stop();
-      inertiaLocked = false;
-      port.scrollTop = sceneLanding(layout, index, "start");
-      lastPosition = port.scrollTop;
+  const animateTo = (destination: () => number, duration: number) => {
+    cancel();
+    clearIdle();
+    if (Math.abs(port.scrollTop - destination()) < 1) {
+      markState();
       render();
       return;
     }
-    begin(activeScene(layout, port.scrollTop), index, "start");
-  }
-  const settleGap = () => {
-    if (!enabled() || swap) return Boolean(swap);
+    animation = {
+      origin: port.scrollTop,
+      destination,
+      started: performance.now(),
+      duration,
+    };
+    markState();
+    frame = requestAnimationFrame(tick);
+  };
+  const settle = () => {
+    idleTimer = null;
+    if (!enabled() || animation || touching) return;
+    const quiet = performance.now() - lastActivity;
+    if (quiet < SCENE_IDLE_MS) {
+      idleTimer = setTimeout(settle, SCENE_IDLE_MS - quiet);
+      return;
+    }
     const layout = getLayout()!;
-    const position = port.scrollTop,
-      direction = position >= lastPosition ? 1 : -1;
-    lastPosition = position;
-    const gap = sceneGap(layout, position);
-    if (!gap) return false;
-    if (direction > 0) begin(gap.from, gap.to, "start");
-    else begin(gap.to, gap.from, "end");
-    return Boolean(swap);
+    const target = sceneSettleTarget(layout, port.scrollTop);
+    if (target === null) {
+      markState();
+      return;
+    }
+    const duration = Math.max(
+      180,
+      (SCENE_TRANSITION_MS * Math.abs(target - port.scrollTop)) /
+        layout.transition,
+    );
+    const gap = sceneGap(layout, port.scrollTop)!;
+    const landing =
+      target === layout.scenes[gap.to].start ? "next" : "previous";
+    animateTo(() => {
+      const latest = getLayout()!;
+      return landing === "next"
+        ? latest.scenes[gap.to].start
+        : latest.scenes[gap.from].start + latest.scenes[gap.from].hold;
+    }, duration);
   };
-  const boundary = (delta: number) => {
-    const layout = getLayout();
-    if (!layout || !delta) return false;
-    if (settleGap()) return true;
-    const index = activeScene(layout, port.scrollTop);
-    const scene = layout.scenes[index];
+  const schedule = () => {
+    clearIdle();
+    markState();
     if (
-      delta > 0 &&
-      index < layout.scenes.length - 1 &&
-      port.scrollTop + delta > scene.start + scene.hold
-    ) {
-      begin(index, index + 1, "start");
-      return true;
-    }
-    if (delta < 0 && index > 0 && port.scrollTop + delta < scene.start) {
-      begin(index, index - 1, "end");
-      return true;
-    }
-    return false;
+      enabled() &&
+      !animation &&
+      !touching &&
+      sceneGap(getLayout()!, port.scrollTop)
+    )
+      idleTimer = setTimeout(settle, SCENE_IDLE_MS);
   };
-  const lockedInput = () => {
-    const now = performance.now();
-    const locked =
-      Boolean(swap) || (inertiaLocked && now - lastInput < quietTime);
-    lastInput = now;
-    if (!locked) inertiaLocked = false;
-    return locked;
+  const activity = () => {
+    if (!enabled()) return;
+    if (animation) {
+      cancel();
+      render();
+    }
+    lastActivity = performance.now();
+    schedule();
   };
   const wheel = (event: WheelEvent) => {
     if (
-      !enabled() ||
-      event.ctrlKey ||
-      Math.abs(event.deltaX) > Math.abs(event.deltaY) ||
-      !event.deltaY
+      !event.ctrlKey &&
+      Math.abs(event.deltaY) >= Math.abs(event.deltaX) &&
+      event.deltaY
     )
-      return;
-    const delta =
-      event.deltaY *
-      (event.deltaMode === 1
-        ? 16
-        : event.deltaMode === 2
-          ? port.clientHeight
-          : 1);
-    if (lockedInput() || boundary(delta)) event.preventDefault();
+      activity();
   };
-  const touchStart = (event: TouchEvent) => {
-    touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
-    if (!swap) inertiaLocked = false;
+  const touchStart = () => {
+    touching = true;
+    activity();
   };
-  const touchMove = (event: TouchEvent) => {
-    if (!enabled() || touchY === null || event.touches.length !== 1) return;
-    const nextY = event.touches[0].clientY,
-      delta = touchY - nextY;
-    touchY = nextY;
-    if (lockedInput() || boundary(delta)) {
-      if (event.cancelable) event.preventDefault();
-    }
-  };
+  const touchMove = () => activity();
   const touchEnd = () => {
-    touchY = null;
+    touching = false;
+    activity();
   };
   const keydown = (event: KeyboardEvent) => {
     if (
-      !enabled() ||
       event.defaultPrevented ||
       event.ctrlKey ||
       event.metaKey ||
@@ -219,57 +165,70 @@ export function createSceneMotion({
       return;
     if (event.key === " " && target?.closest('button,a,[role="button"]'))
       return;
-    const down =
-      event.key === "ArrowDown" ||
-      event.key === "PageDown" ||
-      (event.key === " " && !event.shiftKey);
-    const up =
-      event.key === "ArrowUp" ||
-      event.key === "PageUp" ||
-      (event.key === " " && event.shiftKey);
-    if (!down && !up && event.key !== "Home" && event.key !== "End") return;
-    event.preventDefault();
-    if (swap) return;
-    if (event.repeat && lockedInput()) return;
-    if (event.key === "Home" || event.key === "End") {
-      navigate(event.key === "Home" ? 0 : getLayout()!.scenes.length - 1);
-      return;
-    }
-    const distance = event.key.startsWith("Arrow")
-      ? 40
-      : port.clientHeight * 0.85;
-    const delta = (down ? 1 : -1) * distance;
-    if (!boundary(delta)) port.scrollBy({ top: delta, behavior: "instant" });
+    if (
+      [
+        "ArrowUp",
+        "ArrowDown",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+        " ",
+      ].includes(event.key)
+    )
+      activity();
+  };
+  const pointerdown = () => {
+    if (animation) activity();
   };
   const scrollEnd = () => {
-    settleGap();
+    if (!animation) schedule();
   };
-
+  const navigate = (index: number, smooth = true, offset = 0) => {
+    if (!enabled() || !getLayout()?.scenes[index]) return;
+    const destination = () => {
+      const scene = getLayout()!.scenes[index];
+      return scene.start + Math.max(0, Math.min(scene.travel, offset));
+    };
+    clearIdle();
+    cancel();
+    if (smooth) animateTo(destination, SCENE_TRANSITION_MS);
+    else {
+      port.scrollTop = destination();
+      markState();
+      render();
+    }
+  };
   port.dataset.transition = "idle";
-  port.addEventListener("wheel", wheel, { passive: false });
+  port.addEventListener("wheel", wheel, { passive: true });
   port.addEventListener("touchstart", touchStart, { passive: true });
-  port.addEventListener("touchmove", touchMove, { passive: false });
+  port.addEventListener("touchmove", touchMove, { passive: true });
   port.addEventListener("touchend", touchEnd, { passive: true });
   port.addEventListener("touchcancel", touchEnd, { passive: true });
+  port.addEventListener("pointerdown", pointerdown, { passive: true });
   port.addEventListener("keydown", keydown);
   port.addEventListener("scrollend", scrollEnd);
   return {
-    get swap() {
-      return swap;
-    },
     navigate,
-    observeScroll: settleGap,
+    observeScroll() {
+      if (!enabled()) return false;
+      if (animation) return true;
+      lastActivity = performance.now();
+      schedule();
+      return false;
+    },
     destroy() {
       if (destroyed) return;
       destroyed = true;
-      pending = null;
-      stop();
+      clearIdle();
+      cancel();
       delete port.dataset.transition;
       port.removeEventListener("wheel", wheel);
       port.removeEventListener("touchstart", touchStart);
       port.removeEventListener("touchmove", touchMove);
       port.removeEventListener("touchend", touchEnd);
       port.removeEventListener("touchcancel", touchEnd);
+      port.removeEventListener("pointerdown", pointerdown);
       port.removeEventListener("keydown", keydown);
       port.removeEventListener("scrollend", scrollEnd);
     },

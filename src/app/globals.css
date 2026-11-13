@@ -3357,6 +3357,7 @@ main {
   right: 0;
 }
 .scene-content {
+  position: relative;
   min-width: 0;
 }
 .scene-stack:is([data-mode="preparing"], [data-mode="pinned"])
@@ -3462,9 +3463,29 @@ main {
   }
 }
 
-/* Promote only the two participating scenes while their timed swap is running. */
-.scene-stack[data-transition="running"]
+/* Promote only the visible chapters while a crossing is in progress. */
+.scene-stack:is([data-transition="running"], [data-transition="scrolling"])
   .scene-panel[data-visible="true"]
   .scene-content {
-  will-change: transform, opacity;
+  will-change: transform, opacity, filter;
+}
+
+/* Recede around the visible viewport, even while reading a long chapter. */
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"]) .scene-panel {
+  perspective: 1200px;
+  perspective-origin: 50% calc((var(--scene-viewport) - 160px) / 2);
+}
+.scene-content::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, #12548418, #082a6040);
+  opacity: var(--sink, 0);
+  border-radius: 12px;
+}
+.scene-stack:is([data-mode="preparing"], [data-mode="pinned"])
+  .chapter
+  .section-padding {
+  padding-block: 56px;
 }

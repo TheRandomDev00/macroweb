@@ -18,7 +18,6 @@ import {
   type SceneLayout,
 } from "@/lib/scene-layout";
 import { createSceneMotion } from "@/lib/scene-motion";
-import { sampleSceneSwap } from "@/lib/scene-transitions";
 import { resolveSceneViewport } from "@/lib/scene-viewport";
 import { SceneProgressContext, SectionMotionContext } from "./SceneContext";
 import { usePageScroll } from "./PageScrollProvider";
@@ -40,10 +39,11 @@ export function SceneStack({
   const panels = useRef<(HTMLDivElement | null)[]>([]);
   const contents = useRef<(HTMLDivElement | null)[]>([]);
   const layout = useRef<SceneLayout | null>(null);
-  const navigate = useRef<(index: number, smooth?: boolean) => void>(() => {});
+  const navigate = useRef<
+    (index: number, smooth?: boolean, offset?: number) => void
+  >(() => {});
   const [pinned, setPinned] = useState(false);
   const [active, setActive] = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
   const scroll = usePageScroll();
 
   useEffect(() => {
@@ -81,6 +81,9 @@ export function SceneStack({
         if (content) {
           content.style.opacity = "";
           content.style.transform = "";
+          content.style.filter = "";
+          content.style.transformOrigin = "";
+          content.style.removeProperty("--sink");
         }
       });
       layout.current = null;
@@ -96,23 +99,26 @@ export function SceneStack({
           0,
           Math.min(port.scrollTop, current.maxScroll),
         );
-        const swap = motion?.swap;
-        const nextActive = swap ? swap.to : activeScene(current, position);
+        const nextActive = activeScene(current, position);
         current.scenes.forEach((_, index) => {
           const panel = panels.current[index],
             content = contents.current[index];
           if (!panel || !content) throw new Error("Missing scene nodes");
-          const sample = swap
-            ? sampleSceneSwap(current, index, swap)
-            : sampleScene(current, index, position);
+          const sample = sampleScene(current, index, position);
           if (![sample.opacity, sample.x, sample.y].every(Number.isFinite))
             throw new Error("Invalid scene sample");
           // Commit actual DOM visibility and interaction state together, before enabling pinning.
           content.style.opacity = String(sample.opacity);
-          content.style.transform = `translate3d(${sample.x}%, ${sample.y}px, 0)`;
+          content.style.transformOrigin = `50% ${Math.max(0, (current.viewport - 160) / 2 - sample.y)}px`;
+          content.style.transform = `translate3d(${sample.x}%, ${sample.y}px, ${sample.z}px) rotateX(${sample.rotateX}deg) scale(${sample.scale})`;
+          content.style.filter =
+            sample.sink > 0
+              ? `blur(${sample.blur}px) brightness(${1 - 0.15 * sample.sink})`
+              : "none";
+          content.style.setProperty("--sink", String(sample.sink));
           panel.style.visibility = sample.opacity > 0 ? "visible" : "hidden";
           panel.dataset.visible = String(sample.opacity > 0);
-          const interactive = !swap && index === nextActive;
+          const interactive = index === nextActive;
           panel.toggleAttribute("inert", !interactive);
           panel.setAttribute("aria-hidden", String(!interactive));
           panel.style.pointerEvents = interactive ? "auto" : "none";
@@ -143,28 +149,34 @@ export function SceneStack({
       if (motion?.observeScroll()) return;
       if (!paintFrame && !failed) paintFrame = requestAnimationFrame(paint);
     };
-    const goTo = (index: number, smooth = true) => {
-      motion?.navigate(index, smooth);
+    const goTo = (index: number, smooth = true, offset = 0) => {
+      motion?.navigate(index, smooth, offset);
     };
     navigate.current = goTo;
-    const hashIndex = (hash: string) => {
+    const hashDestination = (hash: string) => {
       let id: string;
       try {
         id = decodeURIComponent(hash.slice(1));
       } catch {
-        return -1;
+        return null;
       }
-      if (id === "top") return 0;
-      const panel = document
-        .getElementById(id)
-        ?.closest<HTMLElement>("[data-scene-index]");
-      return panel && port.contains(panel)
-        ? Number(panel.dataset.sceneIndex)
-        : -1;
+      if (id === "top") return { index: 0, offset: 0 };
+      const target = document.getElementById(id);
+      const panel = target?.closest<HTMLElement>("[data-scene-index]");
+      if (!target || !panel || !port.contains(panel)) return null;
+      const index = Number(panel.dataset.sceneIndex),
+        content = contents.current[index];
+      let offset = 0,
+        element: HTMLElement | null = target;
+      while (element && element !== content) {
+        offset += element.offsetTop;
+        element = element.offsetParent as HTMLElement | null;
+      }
+      return { index, offset };
     };
     const restoreHash = () => {
-      const index = hashIndex(location.hash || "#top");
-      if (index >= 0) goTo(index, false);
+      const destination = hashDestination(location.hash || "#top");
+      if (destination) goTo(destination.index, false, destination.offset);
     };
     const measure = () => {
       measureFrame = 0;
@@ -278,17 +290,16 @@ export function SceneStack({
         !url.hash
       )
         return;
-      const index = hashIndex(url.hash);
-      if (index < 0) return;
+      const destination = hashDestination(url.hash);
+      if (!destination) return;
       event.preventDefault();
       history.pushState(null, "", url.hash);
-      goTo(index);
+      goTo(destination.index, true, destination.offset);
     };
     motion = createSceneMotion({
       port,
       getLayout: () => layout.current,
       render: paint,
-      onRunningChange: setTransitioning,
     });
     port.addEventListener("scroll", queuePaint, { passive: true });
     port.addEventListener("load", queueMeasure, true);
@@ -359,7 +370,7 @@ export function SceneStack({
         <nav className="scene-navigation" aria-label="Page sections">
           <button
             aria-label="Previous section"
-            disabled={transitioning || active === 0}
+            disabled={active === 0}
             onClick={() => goTo(active - 1)}
           >
             <ArrowUp size={14} />
@@ -371,7 +382,7 @@ export function SceneStack({
           </span>
           <button
             aria-label="Next section"
-            disabled={transitioning || active === items.length - 1}
+            disabled={active === items.length - 1}
             onClick={() => goTo(active + 1)}
           >
             <ArrowDown size={14} />

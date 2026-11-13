@@ -25,9 +25,9 @@ npm run preview
 ## What works
 
 - A shared sticky viewport inside a bounded native scroll area: sections replace one another with alternating horizontal entrances and simultaneous outgoing fades. Header and progress share that scroll source.
-- Long scenes travel vertically through their full content before the next scene enters. Hash links, browser back/forward, and section controls navigate the scroll timeline.
+- Three longer chapters group discovery/setup, paid/free tools, and community/support. Each travels vertically through its full content before the next chapter enters. Hash links, browser back/forward, and section controls navigate the scroll timeline.
 - Header/promo thresholds initialized from restored scroll positions.
-- Section changes run as complete 700 ms swaps with smooth easing. Wheel, touch, keyboard, and navigation cannot leave the page stopped between scenes; trackpad momentum is suppressed during the swap. Native scrolling remains available inside long sections. Inactive panels are inert; reduced-motion and no-JavaScript modes retain an ordinary readable vertical page. Hero blur entrances, counters, and a scroll-driven setup timeline.
+- Wheel, touch, and keyboard scrolling stay native and unrestricted, including during crossings. Only after 160 ms without input or scrolling does an unfinished crossing settle to its nearest endpoint with smooth easing. New input cancels settling immediately. Outgoing chapters recede into depth, sink downward, tilt, soften, and fade with a blue underwater tint. Inactive panels are inert; reduced-motion and no-JavaScript modes retain an ordinary readable vertical page. Hero blur entrances, counters, and a scroll-driven setup timeline.
 - A persistent blue Canvas particle network with proximity-based connections, hidden-tab suspension, and CSS ambient orbs.
 - Three keyboard-operable carousel previews; an interactive routine preview.
 - Search, category filters, monthly/one-time pricing, empty state, and native product dialogs.

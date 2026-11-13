@@ -23,29 +23,27 @@ export default function Home() {
       <main id="top">
         <SceneStack
           labels={[
-            "Welcome",
-            "At a glance",
-            "Premium tools",
-            "Free tools",
-            "How it works",
-            "Community",
-            "FAQ",
-            "Get started",
-            "Explore",
+            "Discover & set up",
+            "Find your tools",
+            "Community & support",
           ]}
         >
-          <Hero />
-          <div>
+          <div className="chapter chapter-discover">
+            <Hero />
             <Stats />
-            <PromoBanner />
+            <HowItWorks />
           </div>
-          <ProductSection />
-          <FreeTools />
-          <HowItWorks />
-          <Community />
-          <FAQ />
-          <ClosingCTA />
-          <SiteFooter />
+          <div className="chapter chapter-tools">
+            <PromoBanner />
+            <ProductSection />
+            <FreeTools />
+          </div>
+          <div className="chapter chapter-community">
+            <Community />
+            <FAQ />
+            <ClosingCTA />
+            <SiteFooter />
+          </div>
         </SceneStack>
       </main>
     </>
