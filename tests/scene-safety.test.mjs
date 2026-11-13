@@ -7,10 +7,10 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 
 test("inflated embedded viewport values cannot produce a giant runway", () => {
-  assert.equal(resolveSceneViewport([8000, 8000, 900]), 900);
-  assert.equal(resolveSceneViewport([8000, 8000]), 1100);
+  assert.equal(resolveSceneViewport([8000, 8000, 900], true), 900);
+  assert.equal(resolveSceneViewport([8000, 8000], true), 1100);
   assert.equal(resolveSceneViewport([0, NaN, Infinity, -100]), null);
-  const viewport = resolveSceneViewport([8000]);
+  const viewport = resolveSceneViewport([8000], true);
   const layout = buildSceneLayout(
     [740, 220, 1400, 1100, 500, 700, 700, 500, 400],
     viewport,
@@ -38,4 +38,11 @@ test("the production export contains the actual pinning CSS", async () => {
       .map((file) => readFile(join("out", file), "utf8")),
   );
   verifySceneCss(css.join("\n"));
+});
+
+test("normal windows fill their visible height without a screen-size or 1100px cap", () => {
+  assert.equal(resolveSceneViewport([1280, 1280, 1280, 1280]), 1280);
+  assert.equal(resolveSceneViewport([1280, 1280, 1280, 900]), 1280);
+  assert.equal(resolveSceneViewport([0, 1440, 1440]), 1440);
+  assert.equal(resolveSceneViewport([1440, 1440, 1440], true), 1440);
 });

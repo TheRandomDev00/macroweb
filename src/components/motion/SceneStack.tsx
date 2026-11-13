@@ -183,12 +183,15 @@ export function SceneStack({
       if (disposed || failed || measuring) return;
       measuring = true;
       try {
-        const viewport = resolveSceneViewport([
-          window.visualViewport?.height ?? 0,
-          document.documentElement.clientHeight,
-          window.innerHeight,
-          window.screen.availHeight,
-        ]);
+        const viewport = resolveSceneViewport(
+          [
+            window.visualViewport?.height ?? 0,
+            document.documentElement.clientHeight,
+            window.innerHeight,
+            window.screen.availHeight,
+          ],
+          window.self !== window.top,
+        );
         if (!viewport) {
           reset("invalid-viewport");
           return;

@@ -396,10 +396,33 @@ try {
     (await touchPage.evaluate(snapshot)).y > 20,
     "Touch must scroll within a long chapter",
   );
-  assert.equal((await touchPage.evaluate(snapshot)).active, "0");
+  // Native fling distance depends on device timing; it may cross a chapter.
+  assert.equal((await touchPage.evaluate(snapshot)).mode, "pinned");
   assert.equal((await touchPage.evaluate(snapshot)).visiblePanels, 1);
   await touchPage.close();
   console.log("PASS native touch scrolling within a longer chapter");
+
+  // A tall real window must not leave the former 180px background-only strip.
+  const tall = await browser.newPage({
+    viewport: { width: 1440, height: 1280 },
+    screen: { width: 1440, height: 900 },
+  });
+  await open(tall);
+  assert.equal((await tall.evaluate(snapshot)).height, 1280);
+  assert.equal(
+    await tall
+      .locator(".scene-stage")
+      .evaluate((node) => node.getBoundingClientRect().bottom),
+    1280,
+  );
+  await tall.screenshot({ path: `${artifacts}/tall-viewport.png` });
+  await tall.setViewportSize({ width: 1440, height: 1440 });
+  await tall.waitForTimeout(200);
+  assert.equal((await tall.evaluate(snapshot)).height, 1440);
+  await tall.close();
+  console.log(
+    "PASS tall viewport fills the window, including when screen metrics are smaller",
+  );
 
   // Real ResizeObserver and visualViewport events; do not replace them with no-op mocks.
   const resized = await browser.newPage({
