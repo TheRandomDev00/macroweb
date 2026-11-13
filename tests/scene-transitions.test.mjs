@@ -11,7 +11,7 @@ import {
 const layout = buildSceneLayout([1600, 2600, 1800], 844);
 
 test("only unfinished crossings need idle settling; reading positions remain untouched", () => {
-  assert.equal(SCENE_IDLE_MS, 48);
+  assert.equal(SCENE_IDLE_MS, 150);
   for (let i = 0; i < layout.scenes.length; i++) {
     const scene = layout.scenes[i];
     assert.ok(Number.isInteger(scene.start));

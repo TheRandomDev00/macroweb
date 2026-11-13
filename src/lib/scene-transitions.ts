@@ -1,6 +1,6 @@
 import type { SceneLayout } from "./scene-layout";
 export const SCENE_TRANSITION_MS = 700;
-export const SCENE_IDLE_MS = 48;
+export const SCENE_IDLE_MS = 150;
 export function smoothSceneEase(progress: number) {
   const t = Math.max(0, Math.min(1, progress));
   // Cubic ease-out: immediate movement with a long, gentle deceleration.
@@ -30,3 +30,5 @@ export function sceneSettleTarget(layout: SceneLayout, position: number) {
     end = layout.scenes[gap.to].start;
   return position - start < end - position ? start : end;
 }
+
+export const SCENE_COAST_PX_PER_MS = 0.12;
