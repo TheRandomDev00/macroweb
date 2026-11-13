@@ -3,7 +3,6 @@ import {
   SCENE_IDLE_MS,
   SCENE_TRANSITION_MS,
   sceneGap,
-  sceneSettleTarget,
   smoothSceneEase,
 } from "./scene-transitions";
 
@@ -13,18 +12,22 @@ type Options = {
   render: () => void;
 };
 
-/** Native input is never blocked. Only an idle, unfinished crossing is gently settled. */
+/** Native scrolling owns input; unfinished crossings coast at the last measured velocity. */
 export function createSceneMotion({ port, getLayout, render }: Options) {
   let frame = 0,
     idleTimer: ReturnType<typeof setTimeout> | null = null;
   let destroyed = false,
     touching = false,
     lastActivity = 0;
+  let velocity = 0;
+  let lastPosition = port.scrollTop,
+    lastSampleTime = performance.now();
   let animation: {
     origin: number;
     destination: () => number;
     started: number;
     duration: number;
+    linear: boolean;
   } | null = null;
   const enabled = () =>
     !destroyed && port.dataset.mode === "pinned" && Boolean(getLayout());
@@ -43,6 +46,8 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     cancelAnimationFrame(frame);
     frame = 0;
     animation = null;
+    lastPosition = port.scrollTop;
+    lastSampleTime = performance.now();
     port.removeAttribute("aria-busy");
     markState();
   };
@@ -55,7 +60,8 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     const destination = animation.destination();
     port.scrollTop =
       animation.origin +
-      (destination - animation.origin) * smoothSceneEase(phase);
+      (destination - animation.origin) *
+        (animation.linear ? phase : smoothSceneEase(phase));
     render();
     if (destroyed || !animation) return;
     if (phase < 1) frame = requestAnimationFrame(tick);
@@ -65,7 +71,11 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       render();
     }
   };
-  const animateTo = (destination: () => number, duration: number) => {
+  const animateTo = (
+    destination: () => number,
+    duration: number,
+    linear = false,
+  ) => {
     cancel();
     clearIdle();
     if (Math.abs(port.scrollTop - destination()) < 1) {
@@ -78,6 +88,7 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       destination,
       started: performance.now(),
       duration,
+      linear,
     };
     markState();
     frame = requestAnimationFrame(tick);
@@ -91,25 +102,22 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       return;
     }
     const layout = getLayout()!;
-    const target = sceneSettleTarget(layout, port.scrollTop);
-    if (target === null) {
+    const gap = sceneGap(layout, port.scrollTop);
+    if (!gap || !Number.isFinite(velocity) || velocity === 0) {
       markState();
       return;
     }
-    const duration = Math.max(
-      180,
-      (SCENE_TRANSITION_MS * Math.abs(target - port.scrollTop)) /
-        layout.transition,
-    );
-    const gap = sceneGap(layout, port.scrollTop)!;
-    const landing =
-      target === layout.scenes[gap.to].start ? "next" : "previous";
-    animateTo(() => {
+    const forward = velocity > 0;
+    const destination = () => {
       const latest = getLayout()!;
-      return landing === "next"
+      return forward
         ? latest.scenes[gap.to].start
         : latest.scenes[gap.from].start + latest.scenes[gap.from].hold;
-    }, duration);
+    };
+    // Preserve direction even before the midpoint; do not snap to the nearer chapter.
+    const duration =
+      Math.abs(destination() - port.scrollTop) / Math.abs(velocity);
+    animateTo(destination, duration, true);
   };
   const schedule = () => {
     clearIdle();
@@ -213,7 +221,15 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     observeScroll() {
       if (!enabled()) return false;
       if (animation) return true;
-      lastActivity = performance.now();
+      const now = performance.now(),
+        delta = port.scrollTop - lastPosition;
+      if (delta !== 0) {
+        const elapsed = now - lastSampleTime;
+        velocity = delta / (elapsed > 200 ? 16.67 : Math.max(1, elapsed));
+        lastPosition = port.scrollTop;
+        lastSampleTime = now;
+        lastActivity = now;
+      }
       schedule();
       return false;
     },

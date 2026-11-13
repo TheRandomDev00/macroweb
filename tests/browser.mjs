@@ -328,10 +328,15 @@ try {
   await snapping.evaluate(() => clearInterval(window.wheelStream));
   await idle(snapping);
   assert.equal((await snapping.evaluate(snapshot)).visiblePanels, 1);
-  // A new wheel interrupts an idle snap immediately, without jumping to its endpoint.
-  await snapping
-    .locator(".scene-stack")
-    .evaluate((root, y) => (root.scrollTop = y), midpoint);
+  // Feed slow native position samples so continuation has a measurable duration.
+  await scrollTo(snapping, crossing.scenes[0].start + crossing.scenes[0].hold);
+  for (let offset = 1; offset <= 8; offset++) {
+    await snapping.locator('.scene-stack').evaluate((root, y) => {
+      root.dispatchEvent(new WheelEvent('wheel', {deltaY:1,bubbles:true}));
+      root.scrollTop = y;
+    }, crossing.scenes[1].start - crossing.transition + offset);
+    await snapping.waitForTimeout(20);
+  }
   await snapping.waitForFunction(
     () =>
       document.querySelector(".scene-stack").dataset.transition === "running",
@@ -355,7 +360,36 @@ try {
   assert.equal(interrupted.state, "scrolling");
   assert.equal(interrupted.after, interrupted.before);
   assert.equal(interrupted.blocked, false);
+  await snapping.waitForFunction(() => document.querySelector('.scene-stack').dataset.transition === 'running');
+  const samples = await snapping.evaluate(() => new Promise(resolve => {
+    const samples = [], root = document.querySelector('.scene-stack');
+    function sample(time) {
+      samples.push({time, y:root.scrollTop});
+      if (samples.length < 12) requestAnimationFrame(sample);
+      else resolve(samples);
+    }
+    requestAnimationFrame(sample);
+  }));
+  const first = samples[0], last = samples.at(-1);
+  assert.ok(last.y > first.y, 'Continuation must keep moving forward');
+  for (const point of samples.slice(1, -1)) {
+    const expected = first.y + (last.y-first.y) * (point.time-first.time) / (last.time-first.time);
+    assert.ok(Math.abs(point.y-expected) <= 2, 'Continuation must maintain constant speed');
+  }
+  // Continue forward even though this crossing is much nearer the previous chapter.
   await idle(snapping);
+  assert.ok(Math.abs((await snapping.evaluate(snapshot)).y - crossing.scenes[1].start) <= 1);
+  for (let offset = 1; offset <= 8; offset++) {
+    await snapping.locator('.scene-stack').evaluate((root, y) => {
+      root.dispatchEvent(new WheelEvent('wheel', {deltaY:-1,bubbles:true}));
+      root.scrollTop = y;
+    }, crossing.scenes[1].start - offset);
+    await snapping.waitForTimeout(20);
+  }
+  await idle(snapping);
+  assert.ok(Math.abs((await snapping.evaluate(snapshot)).y -
+    (crossing.scenes[0].start + crossing.scenes[0].hold)) <= 1,
+    'Reverse movement must finish toward the previous chapter regardless of midpoint');
   // Real large native wheel input can cross multiple chapters in one event.
   await scrollTo(snapping, 0);
   await snapping.mouse.move(700, 450);
@@ -368,7 +402,7 @@ try {
   await idle(snapping);
   await snapping.close();
   console.log(
-    "PASS unrestricted native scrolling, passive input, idle-only settling, interruption, and sinking depth",
+    "PASS unrestricted native scrolling, same-direction momentum continuation, interruption, and sinking depth",
   );
 
   const touchPage = await browser.newPage({
