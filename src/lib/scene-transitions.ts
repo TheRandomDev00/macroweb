@@ -3,7 +3,8 @@ export const SCENE_TRANSITION_MS = 700;
 export const SCENE_IDLE_MS = 160;
 export function smoothSceneEase(progress: number) {
   const t = Math.max(0, Math.min(1, progress));
-  return t * t * t * (t * (t * 6 - 15) + 10);
+  // Cubic ease-out: immediate movement with a long, gentle deceleration.
+  return 1 - Math.pow(1 - t, 3);
 }
 export function sceneLanding(
   layout: SceneLayout,

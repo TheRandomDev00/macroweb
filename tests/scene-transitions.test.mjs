@@ -64,10 +64,11 @@ test("outgoing chapters sink into depth while reading content and incoming chapt
   assert.equal(incoming.blur, 0);
   assert.equal(incoming.opacity + midway.opacity, 1);
 });
-test("settling ease has still endpoints and stays monotonic", () => {
+test("settling ease decelerates toward its endpoint and stays monotonic", () => {
   assert.equal(smoothSceneEase(0), 0);
   assert.equal(smoothSceneEase(1), 1);
-  assert.ok(smoothSceneEase(0.01) < 0.00002);
+  assert.ok(smoothSceneEase(0.5) > 0.8);
+  assert.ok(smoothSceneEase(0.25) > smoothSceneEase(0.75) - smoothSceneEase(0.5));
   assert.ok(1 - smoothSceneEase(0.99) < 0.00002);
   let previous = 0;
   for (let t = 0; t <= 1; t += 0.01) {
