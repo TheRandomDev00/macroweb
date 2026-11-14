@@ -51,6 +51,7 @@ export function SceneStack({
       track = runway.current,
       view = stage.current;
     if (!port || !track || !view) return;
+    const lightEffects = window.matchMedia("(max-width: 767px), (pointer: coarse)");
     let disposed = false,
       failed = false,
       measuring = false;
@@ -88,6 +89,7 @@ export function SceneStack({
       });
       layout.current = null;
       scroll.setElement(null);
+      delete port.dataset.effects;
       setPinned(false);
     };
     const paint = () => {
@@ -100,17 +102,33 @@ export function SceneStack({
           Math.min(port.scrollTop, current.maxScroll),
         );
         const nextActive = activeScene(current, position);
+        const lightweight = lightEffects.matches;
+        port.dataset.effects = lightweight ? "light" : "full";
+        // Read stable geometry before writing chapter transforms; avoid forcing layout after them.
+        if (
+          initialized && position > 30 &&
+          Math.abs(view.getBoundingClientRect().top - port.getBoundingClientRect().top) > 4
+        ) {
+          reset("stage-not-pinned");
+          return;
+        }
         current.scenes.forEach((_, index) => {
           const panel = panels.current[index],
             content = contents.current[index];
           if (!panel || !content) throw new Error("Missing scene nodes");
-          const sample = sampleScene(current, index, position);
+          const sample = sampleScene(current, index, position, lightweight ? "light" : "full");
           if (![sample.opacity, sample.x, sample.y].every(Number.isFinite))
             throw new Error("Invalid scene sample");
+          if (sample.opacity === 0 && panel.dataset.visible === "false") {
+            progress[index].set(sample.progress);
+            return;
+          }
           // Commit actual DOM visibility and interaction state together, before enabling pinning.
           content.style.opacity = String(sample.opacity);
-          content.style.transformOrigin = `50% ${Math.max(0, (current.viewport - 160) / 2 - sample.y)}px`;
-          content.style.transform = `translate3d(${sample.x}%, ${sample.y}px, ${sample.z}px) rotateX(${sample.rotateX}deg) scale(${sample.scale})`;
+          content.style.transformOrigin = lightweight ? "" : `50% ${Math.max(0, (current.viewport - 160) / 2 - sample.y)}px`;
+          content.style.transform = lightweight
+            ? `translate3d(${sample.x}%, ${sample.y}px, 0)`
+            : `translate3d(${sample.x}%, ${sample.y}px, ${sample.z}px) rotateX(${sample.rotateX}deg) scale(${sample.scale})`;
           content.style.filter =
             sample.sink > 0
               ? `blur(${sample.blur}px) brightness(${1 - 0.15 * sample.sink})`
@@ -128,17 +146,6 @@ export function SceneStack({
         if (lastActive !== nextActive) {
           lastActive = nextActive;
           setActive(nextActive);
-        }
-        // A failed sticky implementation must never leave an empty scroll runway.
-        if (
-          initialized &&
-          position > 30 &&
-          Math.abs(
-            view.getBoundingClientRect().top - port.getBoundingClientRect().top,
-          ) > 4
-        ) {
-          reset("stage-not-pinned");
-          return;
         }
         scroll.update();
       } catch {
@@ -206,6 +213,7 @@ export function SceneStack({
         // Preparing and pinned have identical CSS. Measure the final geometry, not the fallback page.
         port.style.setProperty("--scene-viewport", `${viewport}px`);
         port.dataset.mode = initialized ? "pinned" : "preparing";
+        port.dataset.effects = lightEffects.matches ? "light" : "full";
         const height = port.clientHeight;
         const heights = contents.current.map(
           (content) => content?.offsetHeight ?? 0,
@@ -307,6 +315,7 @@ export function SceneStack({
     port.addEventListener("scroll", queuePaint, { passive: true });
     port.addEventListener("load", queueMeasure, true);
     window.addEventListener("resize", queueMeasure);
+    lightEffects.addEventListener("change", queueMeasure);
     window.visualViewport?.addEventListener("resize", queueMeasure);
     window.addEventListener("pageshow", queueMeasure);
     window.addEventListener("hashchange", restoreHash);
@@ -324,6 +333,7 @@ export function SceneStack({
       port.removeEventListener("scroll", queuePaint);
       port.removeEventListener("load", queueMeasure, true);
       window.removeEventListener("resize", queueMeasure);
+      lightEffects.removeEventListener("change", queueMeasure);
       window.visualViewport?.removeEventListener("resize", queueMeasure);
       window.removeEventListener("pageshow", queueMeasure);
       window.removeEventListener("hashchange", restoreHash);

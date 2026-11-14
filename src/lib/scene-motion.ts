@@ -129,6 +129,7 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       started: performance.now(),
       duration,
     };
+    markState();
     expectedPosition = port.scrollTop;
     markState();
     frame = requestAnimationFrame(tick);

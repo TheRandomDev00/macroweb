@@ -20,6 +20,8 @@ export function ParticleNetwork() {
     const canvas = ref.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
+    const scrollRoot = document.querySelector<HTMLElement>(".scene-stack");
+    const lightEffects = window.matchMedia("(max-width: 767px), (pointer: coarse)");
     let width = 0,
       height = 0,
       frame = 0,
@@ -29,6 +31,12 @@ export function ParticleNetwork() {
     const reach = 145;
 
     const draw = (time: number) => {
+      // Leave the existing canvas frame in place while mobile transitions need the GPU.
+      if (lightEffects.matches && scrollRoot && scrollRoot.dataset.transition !== "idle" && scrollRoot.dataset.transition) {
+        lastTime = time;
+        if (!reduced && !document.hidden) frame = requestAnimationFrame(draw);
+        return;
+      }
       const dt = lastTime ? Math.min((time - lastTime) / 1000, 0.04) : 0;
       lastTime = time;
       ctx.clearRect(0, 0, width, height);

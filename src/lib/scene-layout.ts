@@ -45,6 +45,7 @@ export function sampleScene(
   layout: SceneLayout,
   index: number,
   scroll: number,
+  effects: "full" | "light" = "full",
 ) {
   const scene = layout.scenes[index];
   const enter =
@@ -56,7 +57,7 @@ export function sampleScene(
       ? 0
       : clamp((scroll - scene.start - scene.hold) / layout.transition);
   // Smootherstep keeps the depth effect still at both ends of the crossing.
-  const sink = exit * exit * exit * (exit * (exit * 6 - 15) + 10);
+  const sink = effects === "light" ? 0 : exit * exit * exit * (exit * (exit * 6 - 15) + 10);
   return {
     opacity: enter * (1 - exit),
     x: (index % 2 === 0 ? -18 : 18) * (1 - enter),

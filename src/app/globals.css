@@ -1732,19 +1732,6 @@ img {
     linear-gradient(145deg, #171e2b, #10141e 70%);
   box-shadow: inset 0 1px 0 #ffffff0d, 0 24px 70px #00000026;
   text-align: center;
-  filter: blur(12px);
-}
-.how-panel[data-revealed="true"] {
-  filter: none;
-  transition: filter 0.5s ease-out 0.12s;
-}
-.how-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.22;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23grain)' opacity='.3' d='M0 0h180v180H0z'/%3E%3C/svg%3E");
 }
 .how-panel::after {
   content: "";
@@ -1789,7 +1776,6 @@ img {
   width: clamp(18px, 2vw, 25px);
   height: clamp(18px, 2vw, 25px);
   color: #8dbce8;
-  filter: drop-shadow(0 0 8px #79aad344);
 }
 .how-panel-entry-label {
   position: relative;
@@ -1797,34 +1783,6 @@ img {
   min-width: 0;
   overflow-wrap: anywhere;
   text-shadow: 0 0 12px #79aad333;
-}
-@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
-  .how-panel-entry-label::before {
-    content: "";
-    position: absolute;
-    inset: -8px -12px;
-    z-index: -1;
-    pointer-events: none;
-    background: radial-gradient(ellipse, #79aad322, transparent 70%);
-    animation: feature-label-glow 6s ease-in-out infinite alternate;
-    animation-play-state: paused;
-  }
-  .how-panel[data-revealed="true"] .how-panel-entry-label::before {
-    animation-play-state: running;
-  }
-}
-@keyframes feature-label-glow {
-  from { opacity: 0.2; }
-  to { opacity: 0.8; }
-}
-@media (max-width: 767px), (pointer: coarse), (prefers-reduced-motion: reduce) {
-  .how-panel,
-  .how-panel[data-revealed="true"] {
-    filter: none;
-    transition: none;
-  }
-  .how-panel::before { display: none; }
-  .how-panel-entry-icon { filter: none; }
 }
 .how-panel-entry:hover {
   background: #79aad312;
@@ -3999,6 +3957,30 @@ main {
   background: linear-gradient(180deg, #12548418, #082a6040);
   opacity: var(--sink, 0);
   border-radius: 12px;
+}
+/* Touch devices crossfade and translate without rasterizing entire chapters into blur surfaces. */
+.scene-stack[data-effects="light"] .scene-panel {
+  perspective: none;
+}
+.scene-stack[data-effects="light"] .scene-panel[data-visible="true"] .scene-content {
+  will-change: transform, opacity;
+}
+.scene-stack[data-effects="light"] .scene-content::after {
+  display: none;
+}
+.scene-stack[data-effects="light"] .scene-content * {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.scene-stack[data-effects="light"] .entrance {
+  filter: none;
+}
+.scene-stack[data-effects="light"] .entrance:not(.entrance--waiting) {
+  animation-name: entrance-fade;
+}
+@keyframes entrance-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .scene-stack:is([data-mode="preparing"], [data-mode="pinned"])
   .chapter

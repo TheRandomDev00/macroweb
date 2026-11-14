@@ -55,3 +55,22 @@ test("invalid dimensions cannot initialize a pinned layout", () => {
     assert.throws(() => buildSceneLayout([600, height], 900), RangeError);
   assert.throws(() => buildSceneLayout([600], 0), RangeError);
 });
+
+test("light transitions retain visibility and reading travel without full-chapter depth effects", () => {
+  const layout = buildSceneLayout([1600, 2600, 1800], 844);
+  for (let position = 0; position <= layout.maxScroll; position += 20) {
+    for (let index = 0; index < layout.scenes.length; index++) {
+      const full = sampleScene(layout, index, position);
+      const light = sampleScene(layout, index, position, "light");
+      assert.equal(light.opacity, full.opacity);
+      assert.equal(light.x, full.x);
+      assert.equal(light.progress, full.progress);
+      assert.equal(light.scale, 1);
+      assert.equal(Math.abs(light.z), 0);
+      assert.equal(light.rotateX, 0);
+      assert.equal(light.blur, 0);
+      assert.equal(light.sink, 0);
+      assert.ok(Math.abs(light.y - (full.y - 80 * full.sink)) < 1e-8);
+    }
+  }
+});
