@@ -24,6 +24,7 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     touching = false,
     lastActivity = 0;
   let direction = 1;
+  let touchY: number | null = null;
   let expectedPosition = port.scrollTop;
   let lastPosition = port.scrollTop;
   let lastScrollTime = performance.now();
@@ -164,14 +165,29 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       activity();
     }
   };
-  const touchStart = () => {
+  const touchStart = (event: TouchEvent) => {
     clearMomentum();
     touching = true;
+    touchY = event.touches[0]?.clientY ?? null;
+    if (animation) {
+      cancel();
+      render();
+    }
+    lastActivity = performance.now();
+  };
+  const touchMove = (event: TouchEvent) => {
+    const nextY = event.touches[0]?.clientY ?? null;
+    if (touchY !== null && nextY !== null && nextY !== touchY) {
+      const nextDirection = Math.sign(touchY - nextY);
+      if (nextDirection !== direction) clearMomentum();
+      direction = nextDirection;
+    }
+    touchY = nextY;
     activity();
   };
-  const touchMove = () => activity();
   const touchEnd = () => {
     touching = false;
+    touchY = null;
     activity();
   };
   const keydown = (event: KeyboardEvent) => {
@@ -268,9 +284,12 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
         const requested = sceneScrollTarget(layout, lastPosition, Math.max(0, Math.min(
           layout.maxScroll, lastPosition + delta,
         )));
-        port.scrollTop = capSceneScroll(
+        const position = capSceneScroll(
           layout, lastPosition, requested, now - lastScrollTime,
         );
+        // Even assigning the current value can interrupt a native touch pan.
+        // Only take over scrolling when a crossing actually needs limiting.
+        if (position !== port.scrollTop) port.scrollTop = position;
         const gap = sceneGap(layout, port.scrollTop + direction * 0.01);
         if (gap && (direction > 0
           ? requested > layout.scenes[gap.from].start + layout.scenes[gap.from].hold

@@ -13,12 +13,12 @@ const compiled = ts.transpileModule(
 
 function fixture() {
   const layout = buildSceneLayout([1000, 1000, 1000], 900);
-  let now = 1000, id = 0, position = 0;
+  let now = 1000, id = 0, position = 0, writes = 0;
   const frames = new Map(), timers = new Map(), listeners = new Map();
   const port = {
     dataset: { mode: 'pinned' },
     get scrollTop() { return position; },
-    set scrollTop(value) { position = Math.round(Math.max(0, Math.min(layout.maxScroll, value))); },
+    set scrollTop(value) { writes++; position = Math.round(Math.max(0, Math.min(layout.maxScroll, value))); },
     addEventListener(name, listener) { listeners.set(name, listener); },
     removeEventListener(name) { listeners.delete(name); },
     removeAttribute() {},
@@ -56,7 +56,12 @@ function fixture() {
     assert.equal(frames.size, 0, 'Momentum must finish');
     assert.equal(timers.size, 0, 'Settling must finish');
   }
-  return { layout, port, motion, step, input, finish, listeners };
+  function touch(y, delta) {
+    listeners.get('touchmove')({ touches: [{ clientY: y }] });
+    position = Math.max(0, Math.min(layout.maxScroll, position + delta));
+    motion.observeScroll();
+  }
+  return { layout, port, motion, step, input, finish, listeners, touch, writes: () => writes };
 }
 
 test('large and small gestures both finish the current transition', () => {
@@ -141,13 +146,43 @@ test('reaching the reading boundary does not start a transition without crossing
 test('touch contact suppresses completion until release', () => {
   const state = fixture();
   state.input(state.layout.scenes[0].hold);
-  state.listeners.get('touchstart')();
+  state.listeners.get('touchstart')({ touches: [{ clientY: 500 }] });
   state.input(1);
   for (let frame = 0; frame < 100; frame++) state.step();
   assert.ok(state.port.scrollTop < state.layout.scenes[1].start);
   state.listeners.get('touchend')();
   state.finish();
   assert.equal(state.port.scrollTop, state.layout.scenes[1].start);
+});
+
+test('native touch scrolling through reading areas does not rewrite the scroll position', () => {
+  const state = fixture();
+  state.motion.navigate(1, false, 100);
+  const writes = state.writes();
+  state.listeners.get('touchstart')({ touches: [{ clientY: 200 }] });
+  state.touch(250, -50);
+  assert.equal(state.port.scrollTop, state.layout.scenes[1].start + 50);
+  assert.equal(state.writes(), writes, 'Native reading scroll must remain untouched');
+  state.listeners.get('touchend')();
+  state.finish();
+});
+
+test('reversing a touch in a gap before the next native scroll event returns to the previous chapter', () => {
+  const state = fixture();
+  state.input(state.layout.scenes[0].hold);
+  state.step(32);
+  state.input(50);
+  state.listeners.get('touchstart')({ touches: [{ clientY: 200 }] });
+  // Touch direction arrives before the browser delivers its next scroll event.
+  state.touch(240, 0);
+  state.listeners.get('touchend')();
+  state.finish();
+  assert.equal(state.port.scrollTop, state.layout.scenes[0].hold);
+  state.listeners.get('touchstart')({ touches: [{ clientY: 200 }] });
+  state.touch(400, -200);
+  state.listeners.get('touchend')();
+  state.finish();
+  assert.equal(state.port.scrollTop, state.layout.scenes[0].hold - 200);
 });
 
 test('navigation, pointer interaction, and teardown discard stale momentum', () => {

@@ -16,6 +16,16 @@ try {
     await page.route("https://api.github.com/**", route => route.fulfill({ json: [] }));
     await page.goto(`http://127.0.0.1:${server.address().port}`, { waitUntil: "networkidle" });
     await page.waitForSelector('.scene-stack[data-mode="pinned"]');
+    const cdp = touch ? await context.newCDPSession(page) : null;
+    const swipe = async (from, to) => {
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: width / 2, y: from }] });
+      const steps = 20;
+      for (let step = 1; step <= steps; step++) {
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: width / 2, y: from + (to - from) * step / steps }] });
+        await page.waitForTimeout(20);
+      }
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    };
     assert.equal(await page.locator(".scene-stack").getAttribute("data-effects"), touch ? "light" : "full");
     const startSampling = () => page.evaluate(() => {
       window.samples = [];
@@ -49,14 +59,30 @@ try {
       console.log('Gesture start', width, layout.scenes[0].hold, await page.locator('.scene-stack').evaluate(el=>({position:el.scrollTop,bounds:el.getBoundingClientRect().toJSON()})));
       await startSampling();
       if (touch) {
-        const cdp = await context.newCDPSession(page);
-        await cdp.send("Input.synthesizeScrollGesture", { x: width / 2, y: 420, yDistance: -180, speed: 600, gestureSourceType: "touch" });
+        await swipe(600, 420);
       } else {
         await page.mouse.move(width / 2, 420);
         await page.mouse.wheel(0, 180);
       }
       await page.waitForTimeout(1400);
       await checkSamples(true);
+    }
+    if (touch) {
+      await page.evaluate(() => document.querySelector('a[href="#store"]').click());
+      await page.waitForTimeout(1000);
+      let previous = await page.locator('.scene-stack').evaluate(root => root.scrollTop);
+      for (let attempt = 0; attempt < 20 && previous > 1; attempt++) {
+        await swipe(250, 700);
+        await page.waitForTimeout(1400);
+        const position = await page.locator('.scene-stack').evaluate(root => root.scrollTop);
+        assert.ok(position < previous, `Reverse touch must leave pricing and continue toward the hero: ${previous} -> ${position}`);
+        previous = position;
+      }
+      assert.ok(previous <= 1, 'Reverse touch gestures must reach the top');
+      assert.equal(await page.locator('.scene-panel').first().getAttribute('aria-hidden'), 'false');
+      await swipe(650, 250);
+      await page.waitForTimeout(1000);
+      assert.ok(await page.locator('.scene-stack').evaluate(root => root.scrollTop > 20), 'Forward touch must still work after returning to the hero');
     }
     console.log(`${width}px: forward/reverse crossings, visibility, effects profile${touch ? ", and native touch" : ""} passed.`);
     await context.close();
