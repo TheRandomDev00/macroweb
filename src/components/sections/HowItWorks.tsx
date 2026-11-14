@@ -1,10 +1,8 @@
 "use client";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Gauge, Radio, SlidersHorizontal, Users, Zap } from "lucide-react";
 import { easeOut } from "@/lib/motion-presets";
-import { SceneProgressContext } from "@/components/motion/SceneContext";
-import { usePageScroll } from "@/components/motion/PageScrollProvider";
 import { SectionLayer } from "@/components/layout/SectionLayer";
 type FeatureEntry = {
   title: string;
@@ -79,44 +77,22 @@ export function HowItWorks() {
   const [headingRevealed, setHeadingRevealed] = useState(false);
   const [selected, setSelected] = useState(entries[0]);
   const reduced = useReducedMotion();
-  const sceneProgress = useContext(SceneProgressContext);
-  const { y } = usePageScroll();
 
   useEffect(() => {
-    // Scene content moves with transforms, so measure after the scene paints.
-    const update = () => {
-      if (!panel.current) return;
-      const port = panel.current.closest<HTMLElement>(".scene-stack[data-mode='pinned']");
-      const viewport = port?.getBoundingClientRect();
-      const visibleRatio = (element: HTMLElement | null) => {
-        if (!element) return 0;
-        const rect = element.getBoundingClientRect();
-        const visibleHeight = Math.max(0,
-          Math.min(rect.bottom, viewport?.bottom ?? window.innerHeight) -
-          Math.max(rect.top, viewport?.top ?? 0));
-        const visibleWidth = Math.max(0,
-          Math.min(rect.right, viewport?.right ?? window.innerWidth) -
-          Math.max(rect.left, viewport?.left ?? 0));
-        return rect.width > 0 && rect.height > 0
-          ? (visibleWidth * visibleHeight) / (rect.width * rect.height)
-          : 0;
-      };
-      const panelRatio = visibleRatio(panel.current);
-      const headingRatio = visibleRatio(heading.current);
-      setRevealed((previous) => panelRatio === 0 ? false : panelRatio >= 0.1 || previous);
-      setHeadingRevealed((previous) => headingRatio === 0 ? false : headingRatio >= 0.2 || previous);
-    };
-    const frame = requestAnimationFrame(update);
-    const unsubscribeScroll = y.on("change", update);
-    const unsubscribeScene = sceneProgress?.on("change", update);
-    window.addEventListener("resize", update);
-    return () => {
-      cancelAnimationFrame(frame);
-      unsubscribeScroll();
-      unsubscribeScene?.();
-      window.removeEventListener("resize", update);
-    };
-  }, [sceneProgress, y]);
+    // The browser tracks clipping and scene transforms without per-scroll layout reads.
+    const observer = new IntersectionObserver((changes) => {
+      for (const entry of changes) {
+        if (entry.target === panel.current) {
+          setRevealed(previous => !entry.isIntersecting ? false : entry.intersectionRatio >= 0.1 || previous);
+        } else {
+          setHeadingRevealed(previous => !entry.isIntersecting ? false : entry.intersectionRatio >= 0.2 || previous);
+        }
+      }
+    }, { threshold: [0, 0.1, 0.2] });
+    if (panel.current) observer.observe(panel.current);
+    if (heading.current) observer.observe(heading.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <SectionLayer id="how-it-works" className="how-section section-padding">
@@ -134,10 +110,10 @@ export function HowItWorks() {
         <motion.div
           ref={panel}
           className="how-panel"
-          initial={{ opacity: 0, filter: "blur(12px)" }}
+          data-revealed={revealed}
+          initial={{ opacity: 0 }}
           animate={{
             opacity: revealed ? 1 : 0,
-            filter: revealed ? "blur(0px)" : "blur(12px)",
           }}
           transition={{
             duration: reduced || !revealed ? 0 : 0.5,

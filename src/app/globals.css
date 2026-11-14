@@ -1732,6 +1732,11 @@ img {
     linear-gradient(145deg, #171e2b, #10141e 70%);
   box-shadow: inset 0 1px 0 #ffffff0d, 0 24px 70px #00000026;
   text-align: center;
+  filter: blur(12px);
+}
+.how-panel[data-revealed="true"] {
+  filter: none;
+  transition: filter 0.5s ease-out 0.12s;
 }
 .how-panel::before {
   content: "";
@@ -1744,7 +1749,7 @@ img {
 .how-panel::after {
   content: "";
   position: absolute;
-  inset: -45%;
+  inset: 0;
   pointer-events: none;
   background: radial-gradient(ellipse, #70b7ff12, transparent 60%);
 }
@@ -1787,13 +1792,39 @@ img {
   filter: drop-shadow(0 0 8px #79aad344);
 }
 .how-panel-entry-label {
+  position: relative;
+  isolation: isolate;
   min-width: 0;
   overflow-wrap: anywhere;
-  animation: feature-label-glow 6s ease-in-out infinite alternate;
+  text-shadow: 0 0 12px #79aad333;
+}
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .how-panel-entry-label::before {
+    content: "";
+    position: absolute;
+    inset: -8px -12px;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse, #79aad322, transparent 70%);
+    animation: feature-label-glow 6s ease-in-out infinite alternate;
+    animation-play-state: paused;
+  }
+  .how-panel[data-revealed="true"] .how-panel-entry-label::before {
+    animation-play-state: running;
+  }
 }
 @keyframes feature-label-glow {
-  from { text-shadow: 0 0 6px #79aad31a; }
-  to { text-shadow: 0 0 16px #79aad366, 0 0 30px #528bd82b; }
+  from { opacity: 0.2; }
+  to { opacity: 0.8; }
+}
+@media (max-width: 767px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .how-panel,
+  .how-panel[data-revealed="true"] {
+    filter: none;
+    transition: none;
+  }
+  .how-panel::before { display: none; }
+  .how-panel-entry-icon { filter: none; }
 }
 .how-panel-entry:hover {
   background: #79aad312;
