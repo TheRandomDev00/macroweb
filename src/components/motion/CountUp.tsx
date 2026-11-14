@@ -1,5 +1,6 @@
 "use client";
-import { animate, useInView, useReducedMotion } from "motion/react";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
+import { animate, useInView } from "motion/react";
 import { useEffect, useRef } from "react";
 
 export function CountUp({
@@ -13,7 +14,7 @@ export function CountUp({
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
   const formatted = value.toFixed(decimals) + suffix;
   useEffect(() => {
     if (!ref.current) return;

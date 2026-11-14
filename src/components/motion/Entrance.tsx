@@ -1,7 +1,7 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { useReducedMotion } from "motion/react";
 export function Entrance({
   children,
   delay = 0,
@@ -13,9 +13,9 @@ export function Entrance({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
   useEffect(() => {
-    if (!whenInView || !ref.current) return;
+    if (reduced || !whenInView || !ref.current) return;
     const element = ref.current;
     const scene = element.closest<HTMLElement>(".scene-content");
     const panel = element.closest<HTMLElement>(".scene-panel");
@@ -53,7 +53,7 @@ export function Entrance({
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("resize", schedule);
     };
-  }, [whenInView]);
+  }, [whenInView, reduced]);
   return (
     <div
       ref={ref}

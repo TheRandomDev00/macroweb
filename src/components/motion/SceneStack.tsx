@@ -1,4 +1,5 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 
 import {
   Children,
@@ -9,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { motionValue, useReducedMotion } from "motion/react";
+import { motionValue } from "motion/react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import {
   activeScene,
@@ -32,7 +33,7 @@ export function SceneStack({
 }) {
   const items = useMemo(() => Children.toArray(children), [children]);
   const progress = useMemo(() => items.map(() => motionValue(0)), [items]);
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
   const root = useRef<HTMLDivElement>(null);
   const runway = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);

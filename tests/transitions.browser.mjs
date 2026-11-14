@@ -15,7 +15,7 @@ try {
     const page = await context.newPage();
     await page.route("https://api.github.com/**", route => route.fulfill({ json: [] }));
     await page.goto(`http://127.0.0.1:${server.address().port}`, { waitUntil: "networkidle" });
-    await page.waitForSelector('.scene-stack[data-mode="pinned"]');
+    await page.waitForSelector(touch ? '.scene-stack[data-mode="flow"]' : '.scene-stack[data-mode="pinned"]');
     const cdp = touch ? await context.newCDPSession(page) : null;
     const swipe = async (from, to) => {
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: width / 2, y: from }] });
@@ -26,7 +26,46 @@ try {
       }
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     };
-    assert.equal(await page.locator(".scene-stack").getAttribute("data-effects"), touch ? "light" : "full");
+    if (touch) {
+      assert.equal(await page.locator('.particle-network').count(), 0, 'Mobile must not mount the particle canvas');
+      assert.equal(await page.locator('.scroll-progress').count(), 0, 'Mobile must not run the progress spring');
+      assert.equal(await page.locator('.scene-navigation').count(), 0, 'Mobile must use normal document flow');
+      const effects = await page.evaluate(() => [...document.querySelectorAll('*')].flatMap(el => {
+        const style = getComputedStyle(el);
+        return style.animationName !== 'none' || style.transitionDuration !== '0s' ||
+          style.filter !== 'none' || style.backdropFilter !== 'none' ||
+          style.boxShadow !== 'none' || style.textShadow !== 'none' || style.willChange !== 'auto'
+          ? [el.className?.baseVal ?? el.className] : [];
+      }));
+      assert.deepEqual(effects, [], 'Mobile must not retain costly CSS effects');
+      await page.evaluate(() => document.querySelector('a[href="#store"]').click());
+      await page.waitForTimeout(200);
+      const store = await page.locator('#store').boundingBox();
+      assert.ok(store.y < 150 && store.y + store.height > 0, 'Native pricing anchor must work');
+      let previous = await page.evaluate(() => window.scrollY);
+      assert.ok(previous > 100, 'Pricing must be below the opening');
+      for (let attempt = 0; attempt < 30 && previous > 1; attempt++) {
+        await swipe(250, 700);
+        await page.waitForTimeout(400);
+        const position = await page.evaluate(() => window.scrollY);
+        assert.ok(position < previous, `Mobile reverse scroll must reach the hero: ${previous} -> ${position}`);
+        previous = position;
+      }
+      assert.ok(previous <= 1, 'Mobile reverse scrolling must reach the top');
+      await swipe(650, 250);
+      await page.waitForTimeout(400);
+      assert.ok(await page.evaluate(() => window.scrollY > 20), 'Forward scrolling must still work');
+      await page.locator('#how-it-works').scrollIntoViewIfNeeded();
+      await page.getByRole('button', { name: 'Performance', exact: true }).click();
+      assert.equal(await page.getByRole('button', { name: 'Performance', exact: true }).getAttribute('aria-pressed'), 'true');
+      assert.equal(await page.locator('.how-panel').evaluate(el => el.inert), false, 'Static features must remain interactive');
+      assert.equal(await page.locator('.how-panel').evaluate(el => getComputedStyle(el).opacity), '1');
+      assert.equal(await page.locator('#store .entrance').evaluate(el => getComputedStyle(el).opacity), '1', 'Pricing must not remain hidden behind an entrance effect');
+      console.log(`${width}px: static mobile effects, native anchors, forward/reverse touch, and feature controls passed.`);
+      await context.close();
+      continue;
+    }
+    assert.equal(await page.locator(".scene-stack").getAttribute("data-effects"), "full");
     const startSampling = () => page.evaluate(() => {
       window.samples = [];
       window.sampling = setInterval(() => {
@@ -38,11 +77,7 @@ try {
       const samples = await page.evaluate(() => { clearInterval(window.sampling); return window.samples; });
       if (requireOverlap) assert.ok(samples.some(items => items.length === 2), `Adjacent chapters must overlap during the crossing: ${JSON.stringify(await page.locator('.scene-stack').evaluate(el=>({position:el.scrollTop,mode:el.dataset.mode,state:el.dataset.transition,visible:[...el.querySelectorAll('.scene-panel')].map(p=>p.dataset.visible)})))}`);
       assert.ok(samples.every(items => items.some(item => item.opacity >= 0.49)), "A chapter must remain readable throughout");
-      if (touch) {
-        assert.ok(samples.flat().every(item => item.filter === "none" && !/rotateX|scale\(/.test(item.transform)));
-        const blur = await page.locator(".version-card").first().evaluate(el => getComputedStyle(el).backdropFilter);
-        assert.equal(blur, "none");
-      } else if (requireOverlap) assert.ok(samples.flat().some(item => item.filter.includes("blur")), "Desktop depth effects must remain available");
+      if (requireOverlap) assert.ok(samples.flat().some(item => item.filter.includes("blur")), "Desktop depth effects must remain available");
     };
     for (const hash of ["#store", "#community", "#top"]) {
       await startSampling();
@@ -58,33 +93,12 @@ try {
       await page.waitForTimeout(200);
       console.log('Gesture start', width, layout.scenes[0].hold, await page.locator('.scene-stack').evaluate(el=>({position:el.scrollTop,bounds:el.getBoundingClientRect().toJSON()})));
       await startSampling();
-      if (touch) {
-        await swipe(600, 420);
-      } else {
-        await page.mouse.move(width / 2, 420);
-        await page.mouse.wheel(0, 180);
-      }
+      await page.mouse.move(width / 2, 420);
+      await page.mouse.wheel(0, 180);
       await page.waitForTimeout(1400);
       await checkSamples(true);
     }
-    if (touch) {
-      await page.evaluate(() => document.querySelector('a[href="#store"]').click());
-      await page.waitForTimeout(1000);
-      let previous = await page.locator('.scene-stack').evaluate(root => root.scrollTop);
-      for (let attempt = 0; attempt < 20 && previous > 1; attempt++) {
-        await swipe(250, 700);
-        await page.waitForTimeout(1400);
-        const position = await page.locator('.scene-stack').evaluate(root => root.scrollTop);
-        assert.ok(position < previous, `Reverse touch must leave pricing and continue toward the hero: ${previous} -> ${position}`);
-        previous = position;
-      }
-      assert.ok(previous <= 1, 'Reverse touch gestures must reach the top');
-      assert.equal(await page.locator('.scene-panel').first().getAttribute('aria-hidden'), 'false');
-      await swipe(650, 250);
-      await page.waitForTimeout(1000);
-      assert.ok(await page.locator('.scene-stack').evaluate(root => root.scrollTop > 20), 'Forward touch must still work after returning to the hero');
-    }
-    console.log(`${width}px: forward/reverse crossings, visibility, effects profile${touch ? ", and native touch" : ""} passed.`);
+    console.log(`${width}px: desktop crossings, visibility, and depth effects passed.`);
     await context.close();
   }
 } finally {

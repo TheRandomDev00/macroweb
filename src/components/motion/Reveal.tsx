@@ -1,11 +1,11 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 
 import {
   animate,
   motion,
   useInView,
   useMotionValue,
-  useReducedMotion,
 } from "motion/react";
 import { useContext, useEffect, useRef, type ReactNode } from "react";
 import { SectionMotionContext } from "./SceneContext";
@@ -26,7 +26,7 @@ export function Reveal({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once, margin: "0px 0px -36px 0px" });
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
   const sectionOwnsMotion = useContext(SectionMotionContext);
   // Visible server output keeps the document readable without JavaScript.
   const opacity = useMotionValue(1);

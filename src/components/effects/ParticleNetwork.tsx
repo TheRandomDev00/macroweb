@@ -1,7 +1,7 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 
 import { useEffect, useRef } from "react";
-import { useReducedMotion } from "motion/react";
 
 type Particle = {
   x: number;
@@ -14,9 +14,10 @@ type Particle = {
 /** Viewport-sized, fixed network: one canvas and one animation loop for the page. */
 export function ParticleNetwork() {
   const ref = useRef<HTMLCanvasElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
 
   useEffect(() => {
+    if (reduced) return;
     const canvas = ref.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
@@ -153,5 +154,5 @@ export function ParticleNetwork() {
     };
   }, [reduced]);
 
-  return <canvas ref={ref} className="particle-network" aria-hidden="true" />;
+  return reduced ? null : <canvas ref={ref} className="particle-network" aria-hidden="true" />;
 }

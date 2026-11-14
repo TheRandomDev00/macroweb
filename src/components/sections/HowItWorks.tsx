@@ -1,6 +1,7 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 import { useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { Gauge, Radio, SlidersHorizontal, Users, Zap } from "lucide-react";
 import { easeOut } from "@/lib/motion-presets";
 import { SectionLayer } from "@/components/layout/SectionLayer";
@@ -76,9 +77,10 @@ export function HowItWorks() {
   const [revealed, setRevealed] = useState(false);
   const [headingRevealed, setHeadingRevealed] = useState(false);
   const [selected, setSelected] = useState(entries[0]);
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
 
   useEffect(() => {
+    if (reduced) return;
     // The browser tracks clipping and scene transforms without per-scroll layout reads.
     const observer = new IntersectionObserver((changes) => {
       for (const entry of changes) {
@@ -92,7 +94,7 @@ export function HowItWorks() {
     if (panel.current) observer.observe(panel.current);
     if (heading.current) observer.observe(heading.current);
     return () => observer.disconnect();
-  }, []);
+  }, [reduced]);
 
   return (
     <SectionLayer id="how-it-works" className="how-section section-padding">
@@ -101,7 +103,7 @@ export function HowItWorks() {
           ref={heading}
           className="how-intro"
           initial={{ opacity: 0, x: -36 }}
-          animate={{ opacity: headingRevealed ? 1 : 0, x: headingRevealed || reduced ? 0 : -36 }}
+          animate={{ opacity: reduced || headingRevealed ? 1 : 0, x: headingRevealed || reduced ? 0 : -36 }}
           transition={{ duration: reduced || !headingRevealed ? 0 : 0.28, ease: easeOut }}
         >
           <h1><span className="gradient-text">Features</span></h1>
@@ -113,14 +115,14 @@ export function HowItWorks() {
           data-revealed={revealed}
           initial={{ opacity: 0 }}
           animate={{
-            opacity: revealed ? 1 : 0,
+            opacity: reduced || revealed ? 1 : 0,
           }}
           transition={{
             duration: reduced || !revealed ? 0 : 0.5,
             delay: reduced || !revealed ? 0 : 0.12,
             ease: easeOut,
           }}
-          inert={!revealed}
+          inert={!reduced && !revealed}
         >
           <div className="how-panel-list" aria-label="Features">
             {entries.map((entry) => (

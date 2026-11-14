@@ -1,7 +1,8 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 
 import { ArrowUpRight, GitBranch, Plus, RotateCcw } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Entrance } from "@/components/motion/Entrance";
 import { releaseAge } from "@/lib/release-date";
@@ -26,7 +27,7 @@ export function Changelog() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
 
   useEffect(() => {
     const controller = new AbortController();

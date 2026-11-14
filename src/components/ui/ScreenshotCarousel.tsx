@@ -1,4 +1,5 @@
 "use client";
+import { useReducedEffects } from "@/hooks/useReducedEffects";
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,7 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
-import { motion, useReducedMotion, useSpring } from "motion/react";
+import { motion, useSpring } from "motion/react";
 
 const slides = [
   "NITMAS overview",
@@ -22,7 +23,7 @@ const slides = [
 export function ScreenshotCarousel() {
   const [slide, setSlide] = useState(0);
   const [running, setRunning] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useReducedEffects();
   const rotateX = useSpring(0, { stiffness: 170, damping: 24 });
   const rotateY = useSpring(0, { stiffness: 170, damping: 24 });
   const resetTilt = () => {
