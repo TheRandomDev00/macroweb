@@ -6,10 +6,10 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '/macroweb';
 if (!/^\/[a-zA-Z0-9_-]+$/.test(basePath) && basePath !== '') throw new Error('Invalid Pages base path');
-const build = spawnSync(process.execPath, [fileURLToPath(import.meta.resolve('next/dist/bin/next')), 'build', '--webpack'], {
+const build = spawnSync(process.execPath, [join(root, 'scripts/build.mjs')], {
   cwd: root,
   stdio: 'inherit',
-  env: { ...process.env, NEXT_PUBLIC_BASE_PATH: basePath, NEXT_DIST_DIR: '.next-pages', NEXT_TELEMETRY_DISABLED: '1' },
+  env: { ...process.env, NEXT_PUBLIC_BASE_PATH: basePath, NEXT_DIST_DIR: '.next', NEXT_TELEMETRY_DISABLED: '1' },
 });
 if (build.status !== 0) process.exit(build.status ?? 1);
 const output = resolve(root, 'out');
@@ -23,3 +23,4 @@ for (const file of await readdir(output, { recursive: true })) {
 }
 await writeFile(join(output, '.nojekyll'), '');
 console.log(`GitHub Pages export ready in out/ for ${basePath || '/'}`);
+
