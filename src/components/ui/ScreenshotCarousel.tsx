@@ -10,8 +10,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useState } from "react";
+import { motion, useReducedMotion, useSpring } from "motion/react";
 
 const slides = [
+  "NITMAS overview",
   "The command center",
   "Build your routine",
   "Your session, at a glance",
@@ -20,6 +22,13 @@ const slides = [
 export function ScreenshotCarousel() {
   const [slide, setSlide] = useState(0);
   const [running, setRunning] = useState(false);
+  const reduced = useReducedMotion();
+  const rotateX = useSpring(0, { stiffness: 170, damping: 24 });
+  const rotateY = useSpring(0, { stiffness: 170, damping: 24 });
+  const resetTilt = () => {
+    rotateX.set(0);
+    rotateY.set(0);
+  };
   const change = (step: number) =>
     setSlide((current) => (current + step + slides.length) % slides.length);
   return (
@@ -46,7 +55,30 @@ export function ScreenshotCarousel() {
       }}
     >
       <div className="showcase-halo" aria-hidden="true" />
-      <div className="showcase-window">
+      <div
+        className="showcase-panel"
+        onPointerMove={(event) => {
+          if (reduced || event.pointerType !== "mouse" ||
+              !window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+          // Measure the stationary wrapper so the tilt never changes its own input bounds.
+          const rect = event.currentTarget.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const x = Math.max(-1, Math.min(1, (event.clientX - rect.left - rect.width / 2) / (rect.width / 2)));
+          const y = Math.max(-1, Math.min(1, (event.clientY - rect.top - rect.height / 2) / (rect.height / 2)));
+          rotateX.set(-y * 5);
+          rotateY.set(x * 5);
+        }}
+        onPointerLeave={resetTilt}
+        onPointerCancel={resetTilt}
+      >
+      <motion.div
+        className="showcase-window"
+        style={{
+          rotateX: reduced ? 0 : rotateX,
+          rotateY: reduced ? 0 : rotateY,
+          transformPerspective: 1600,
+        }}
+      >
         <div className="window-chrome">
           <div className="window-dots" aria-hidden="true">
             <i />
@@ -54,7 +86,7 @@ export function ScreenshotCarousel() {
             <i />
           </div>
           <span>
-            DEVREALM / {slide === 0 ? "COMMAND CENTER" : "INTERACTIVE PREVIEW"}
+            {slide === 0 ? "NITMAS / OVERVIEW" : `DEVREALM / ${slide === 1 ? "COMMAND CENTER" : "INTERACTIVE PREVIEW"}`}
           </span>
           <Settings2 size={12} />
         </div>
@@ -68,26 +100,41 @@ export function ScreenshotCarousel() {
         >
           {slide === 0 && (
             <div
-              className="screenshot-slide"
+              className="screenshot-slide screenshot-slide--overview"
               role="group"
               aria-roledescription="slide"
-              aria-label="1 of 3: Command center"
+              aria-label="1 of 4: NITMAS overview"
             >
               <img
-                src="/images/devrealm-preview.svg"
-                alt="DevRealm Anime Vanguards interface with map and routine selectors"
-                width="1301"
-                height="781"
+                src="/images/features/nitmas-overview.png"
+                alt="NITMAS interface showing the game docking area, unit priorities, setup controls, and session statistics"
+                width={1398}
+                height={799}
                 fetchPriority="high"
               />
             </div>
           )}
           {slide === 1 && (
             <div
+              className="screenshot-slide"
+              role="group"
+              aria-roledescription="slide"
+              aria-label="2 of 4: Command center"
+            >
+              <img
+                src="/images/devrealm-preview.svg"
+                alt="DevRealm Anime Adventures interface with map and routine selectors"
+                width="1301"
+                height="781"
+              />
+            </div>
+          )}
+          {slide === 2 && (
+            <div
               className="routine-slide"
               role="group"
               aria-roledescription="slide"
-              aria-label="2 of 3: Routine builder preview"
+              aria-label="3 of 4: Routine builder preview"
             >
               <div className="preview-title">
                 <span className="preview-icon">
@@ -101,7 +148,7 @@ export function ScreenshotCarousel() {
               </div>
               <div className="routine-steps">
                 {[
-                  "Select a game",
+                  "Select Anime Adventures",
                   "Choose your routine",
                   "Let it do its thing",
                 ].map((label, i) => (
@@ -115,7 +162,7 @@ export function ScreenshotCarousel() {
                     <p>{label}</p>
                     <span className="step-detail">
                       {i === 0
-                        ? "Anime Vanguards"
+                        ? "Anime Adventures"
                         : i === 1
                           ? "Custom map"
                           : running
@@ -134,12 +181,12 @@ export function ScreenshotCarousel() {
               </button>
             </div>
           )}
-          {slide === 2 && (
+          {slide === 3 && (
             <div
               className="session-slide"
               role="group"
               aria-roledescription="slide"
-              aria-label="3 of 3: Illustrative session dashboard"
+              aria-label="4 of 4: Illustrative session dashboard"
             >
               <div className="preview-title">
                 <span className="preview-icon">
@@ -190,15 +237,16 @@ export function ScreenshotCarousel() {
         </div>
         <div className="window-bottom">
           <div className="game-label">
-            <img src="/images/vanguards.png" width="28" height="28" alt="" />
+            <img src="/images/adventures.png" width="28" height="28" alt="" />
             <span>
-              Anime Vanguards<small>Automation, made simple.</small>
+              Anime Adventures<small>Automation, made simple.</small>
             </span>
           </div>
           <span className="window-status">
             <i /> Ready to run
           </span>
         </div>
+      </motion.div>
       </div>
       <div className="showcase-floating" aria-hidden="true">
         <span className="success-icon">

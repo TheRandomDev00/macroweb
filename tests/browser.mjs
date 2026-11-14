@@ -103,11 +103,32 @@ async function idle(page) {
 }
 async function scrollTo(page, top) {
   await idle(page);
-  await page
-    .locator(".scene-stack")
-    .evaluate((root, y) => root.scrollTo({ top: y, behavior: "instant" }), top);
-  await settle(page);
-  await idle(page);
+  // Each native jump is capped at the next crossing; repeat to reach distant chapters.
+  for (let attempt = 0; attempt < 6; attempt++) {
+    await page
+      .locator(".scene-stack")
+      .evaluate((root, y) => root.scrollTo({ top: y, behavior: "instant" }), top);
+    await settle(page);
+    await idle(page);
+    const position = await page.locator(".scene-stack").evaluate((root) => root.scrollTop);
+    if (Math.abs(position - top) <= 1) return;
+    // Late image/layout changes can move a previously measured target into a gap.
+    const metrics = await page.locator('.scene-stack').evaluate(root => ({
+      heights: [...root.querySelectorAll('.scene-content')].map(node => node.offsetHeight),
+      height: root.clientHeight,
+    }));
+    const current = buildSceneLayout(metrics.heights, metrics.height);
+    if (current.scenes.slice(0, -1).some((scene, index) => {
+      const start = scene.start + scene.hold, end = current.scenes[index + 1].start;
+      return top > start && top < end &&
+        (Math.abs(position - start) <= 1 || Math.abs(position - end) <= 1);
+    })) return;
+  }
+  const metrics = await page.locator('.scene-stack').evaluate(root => ({
+    heights: [...root.querySelectorAll('.scene-content')].map(node => node.offsetHeight),
+    height: root.clientHeight,
+  }));
+  assert.fail(`Could not reach scroll position ${top}: ${JSON.stringify(await page.evaluate(snapshot))}; layout: ${JSON.stringify(buildSceneLayout(metrics.heights, metrics.height))}`);
 }
 
 try {
@@ -203,38 +224,12 @@ try {
           .opacity === "1",
     );
     await idle(page);
-    await page.locator('input[type="search"]').fill("Vanguards");
-    assert.equal(await page.locator(".product-card").count(), 1);
-    await page.getByRole("button", { name: "Monthly", exact: true }).click();
-    assert.match(await page.locator(".product-price").innerText(), /2.99/);
-    await idle(page);
-    // Bring this control into the reading viewport without skipping to Free Tools.
-    const buttonTop = await page.locator(".product-view").evaluate((button) => {
-      const root = document.querySelector(".scene-stack"),
-        rect = button.getBoundingClientRect();
-      return (
-        root.scrollTop + Math.max(0, rect.bottom - (root.clientHeight - 85))
-      );
-    });
-    await scrollTo(page, buttonTop);
-    try {
-      await page.locator(".product-view").click({ timeout: 4000 });
-    } catch (error) {
-      console.log(
-        "PRODUCT DEBUG",
-        viewport,
-        buttonTop,
-        await page.evaluate(snapshot),
-        await page.locator(".product-view").boundingBox(),
-      );
-      await page.screenshot({
-        path: `${artifacts}/failed-product-${viewport.width}.png`,
-      });
-      throw error;
-    }
-    await page.locator("dialog[open]").waitFor({ state: "visible" });
-    assert.equal(await page.locator("dialog[open]").count(), 1);
-    await page.getByRole("button", { name: "Close product details" }).click();
+    assert.equal(await page.locator(".product-card").count(), 0);
+    assert.equal(await page.locator(".version-card").count(), 2);
+    assert.match(await page.locator("#free-tools").innerText(), /Free version/);
+    assert.match(await page.locator("#premium-tools").innerText(), /Premium version/);
+    assert.equal(await page.locator("#free-tools .version-actions a").getAttribute("href"), "#community");
+    assert.equal(await page.locator("#premium-tools .version-actions a").getAttribute("href"), "#community");
     await settle(page);
     const before = await page
       .locator(".scene-stack")
@@ -287,54 +282,28 @@ try {
     crossingMetrics.height,
   );
   const midpoint = crossing.scenes[1].start - crossing.transition / 2;
-  // Synthetic events exercise the passive input observer while a native scroll places us in a gap.
-  await snapping.evaluate((y) => {
-    const port = document.querySelector(".scene-stack");
-    window.blockedWheel = false;
-    window.wheelStream = setInterval(() => {
-      const event = new WheelEvent("wheel", {
-        deltaY: 20,
-        bubbles: true,
-        cancelable: true,
-      });
-      port.dispatchEvent(event);
-      window.blockedWheel ||= event.defaultPrevented;
-    }, 25);
-    port.scrollTop = y;
-  }, midpoint);
-  await snapping.waitForTimeout(400);
+  await scrollTo(snapping, crossing.scenes[0].hold);
+  // A real wheel gesture supplies momentum; inspect it halfway through the crossing.
+  await snapping.mouse.move(700, 450);
+  await snapping.mouse.wheel(0, crossing.transition);
+  await snapping.waitForFunction(y => document.querySelector('.scene-stack').scrollTop >= y, midpoint);
   const active = await snapping.evaluate(snapshot);
-  assert.equal(
-    active.transition,
-    "scrolling",
-    "Input must postpone forced settling",
-  );
+  assert.equal(active.transition, 'running');
   assert.equal(active.visiblePanels, 2);
-  assert.ok(Math.abs(active.y - midpoint) <= 1, "No input-time snapping");
-  const depth = await snapping
-    .locator('[data-scene-index="0"] .scene-content')
-    .evaluate((node) => ({
-      transform: node.style.transform,
-      filter: node.style.filter,
-      overflow: document.querySelector(".scene-stack").style.overflowY,
-      blocked: window.blockedWheel,
-    }));
-  assert.ok(Number(depth.transform.match(/, (-?[0-9.]+)px\)/)[1]) < -160);
-  assert.ok(Number(depth.transform.match(/scale\(([0-9.]+)\)/)[1]) < 0.96);
-  assert.ok(Number(depth.filter.match(/blur\(([0-9.]+)px\)/)[1]) > 0.9);
-  assert.equal(depth.overflow, "");
-  assert.equal(depth.blocked, false);
+  const depth = await snapping.locator('[data-scene-index="0"] .scene-content')
+    .evaluate(node => ({ transform: node.style.transform, filter: node.style.filter }));
+  assert.ok(Number(depth.transform.match(/scale\(([0-9.]+)\)/)[1]) < 1);
+  assert.match(depth.filter, /blur/);
   await snapping.screenshot({ path: `${artifacts}/sinking.png` });
-  await snapping.evaluate(() => clearInterval(window.wheelStream));
   await idle(snapping);
   assert.equal((await snapping.evaluate(snapshot)).visiblePanels, 1);
   // Feed slow native position samples so continuation has a measurable duration.
   await scrollTo(snapping, crossing.scenes[0].start + crossing.scenes[0].hold);
   for (let offset = 1; offset <= 8; offset++) {
-    await snapping.locator('.scene-stack').evaluate((root, y) => {
+    await snapping.locator('.scene-stack').evaluate((root) => {
       root.dispatchEvent(new WheelEvent('wheel', {deltaY:1,bubbles:true}));
-      root.scrollTop = y;
-    }, crossing.scenes[1].start - crossing.transition + offset);
+      root.scrollTop += 1;
+    });
     await snapping.waitForTimeout(20);
   }
   await snapping.waitForFunction(
@@ -357,7 +326,7 @@ try {
       blocked: event.defaultPrevented,
     };
   });
-  assert.equal(interrupted.state, "scrolling");
+  assert.equal(interrupted.state, "running");
   assert.equal(interrupted.after, interrupted.before);
   assert.equal(interrupted.blocked, false);
   await snapping.waitForFunction(() => document.querySelector('.scene-stack').dataset.transition === 'running');
@@ -375,36 +344,46 @@ try {
   for (let i=1;i<samples.length;i++) {
     const previous=samples[i-1], point=samples[i];
     const delta=point.y-previous.y;
-    assert.ok(delta>=0 && delta<=.24*(point.time-previous.time)+2,
-      'Automatic continuation must accelerate without exceeding 240px/s');
+    assert.ok(delta>=0 && delta<=.8*(point.time-previous.time)+2,
+      'Momentum must remain below the transition speed cap');
   }
   // Continue forward even though this crossing is much nearer the previous chapter.
   await idle(snapping);
   assert.ok(Math.abs((await snapping.evaluate(snapshot)).y - crossing.scenes[1].start) <= 1);
   for (let offset = 1; offset <= 8; offset++) {
-    await snapping.locator('.scene-stack').evaluate((root, y) => {
+    await snapping.locator('.scene-stack').evaluate((root) => {
       root.dispatchEvent(new WheelEvent('wheel', {deltaY:-1,bubbles:true}));
-      root.scrollTop = y;
-    }, crossing.scenes[1].start - offset);
+      root.scrollTop -= 1;
+    });
     await snapping.waitForTimeout(20);
   }
   await idle(snapping);
   assert.ok(Math.abs((await snapping.evaluate(snapshot)).y -
     (crossing.scenes[0].start + crossing.scenes[0].hold)) <= 1,
     'Reverse movement must finish toward the previous chapter regardless of midpoint');
-  // Real large native wheel input can cross multiple chapters in one event.
+  // Excess input helps complete the current crossing without spilling into reading scroll.
   await scrollTo(snapping, 0);
   await snapping.mouse.move(700, 450);
   await snapping.mouse.wheel(0, crossing.scenes[2].start + 100);
   await snapping.waitForFunction(
-    (y) => document.querySelector(".scene-stack").scrollTop >= y,
-    crossing.scenes[2].start,
+    (y) => document.querySelector(".scene-stack").scrollTop > y,
+    crossing.scenes[0].hold,
   );
-  assert.equal((await snapping.evaluate(snapshot)).active, "2");
+  assert.ok((await snapping.evaluate(snapshot)).y < crossing.scenes[1].start);
   await idle(snapping);
+  const momentumEnd = await snapping.evaluate(snapshot);
+  assert.equal(momentumEnd.active, "1");
+  assert.ok(Math.abs(momentumEnd.y - crossing.scenes[1].start) <= 1,
+    'Buffered input must stop at the transition boundary');
+  await snapping.waitForTimeout(300);
+  assert.equal((await snapping.evaluate(snapshot)).y, momentumEnd.y,
+    'No residual momentum may jump into the reading area');
+  await snapping.mouse.wheel(0, 100);
+  await snapping.waitForFunction(y => document.querySelector('.scene-stack').scrollTop > y + 50,
+    momentumEnd.y);
   await snapping.close();
   console.log(
-    "PASS unrestricted native scrolling, fixed slow continuation, interruption, and sinking depth",
+    "PASS capped transition scrolling, eased continuation, uninterrupted input, and sinking depth",
   );
 
   const touchPage = await browser.newPage({

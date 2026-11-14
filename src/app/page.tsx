@@ -4,8 +4,6 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ScrollProgress } from "@/components/motion/ScrollProgress";
 import { Hero } from "@/components/sections/Hero";
 import { Stats } from "@/components/sections/Stats";
-import { PromoBanner } from "@/components/sections/PromoBanner";
-import { ProductSection } from "@/components/sections/ProductSection";
 import { FreeTools } from "@/components/sections/FreeTools";
 import { HowItWorks } from "@/components/sections/HowItWorks";
 import { Community } from "@/components/sections/Community";
@@ -24,7 +22,7 @@ export default function Home() {
         <SceneStack
           labels={[
             "Discover & set up",
-            "Find your tools",
+            "Choose your version",
             "Community & support",
           ]}
         >
@@ -34,12 +32,9 @@ export default function Home() {
             <HowItWorks />
           </div>
           <div className="chapter chapter-tools">
-            <PromoBanner />
-            <ProductSection />
             <FreeTools />
           </div>
           <div className="chapter chapter-community">
-            <Community />
             <FAQ />
             <ClosingCTA />
             <SiteFooter />

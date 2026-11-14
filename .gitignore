@@ -1,5 +1,8 @@
 node_modules/
 .next/
+.next-pages/
+.next-cloudflare/
+.wrangler/
 out/
 .sites-runtime/
 *.tsbuildinfo

@@ -7,8 +7,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "DevRealm — Excel.",
   description:
-    "DevRealm. Discover game automation tools through a responsive, scroll-driven experience.",
-  icons: { icon: "/images/devrealm.svg" },
+    "DevRealm. Discover automation for Anime Adventures through a responsive, scroll-driven experience.",
+  icons: { icon: { url: "/images/image.png", type: "image/png" } },
   robots: { index: false, follow: false },
 };
 

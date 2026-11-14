@@ -10,11 +10,10 @@ export function FAQ() {
     <SectionLayer id="faq" className="faq-section section-padding">
       <div className="page-width">
         <Reveal className="section-heading">
-          <span className="eyebrow">A FEW THINGS TO KNOW</span>
           <h2>
-            Good <span className="gradient-text">questions.</span>
+             F<span className="gradient-text">A</span>Q
           </h2>
-          <p>Let’s get the little things out of the way.</p>
+          <p>commonly asked questions</p>
         </Reveal>
         <div className="faq-grid">
           {faqs.map((faq, i) => (
@@ -52,13 +51,10 @@ export function FAQ() {
           ))}
         </div>
         <Reveal className="faq-help">
-          <p>Still curious? There’s a community for that.</p>
           <a
             href="#community"
-            target="_blank"
-            rel="noopener noreferrer"
           >
-            Let’s talk on Discord <ArrowUpRight size={14} />
+            Discord <ArrowUpRight size={14} />
           </a>
         </Reveal>
       </div>

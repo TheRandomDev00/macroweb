@@ -21,13 +21,14 @@ test("the static export serves the full page, including its server-rendered cata
   for (const text of [
     "DEV",
     "Anime Adventures",
-    "Anime Vanguards",
-    "DevRealm Task",
+    "Free version",
+    "Premium version",
     "Goodbye, grind.",
     "© 2026 DevRealm.",
   ])
     assert.ok(html.includes(text), `Missing content: ${text}`);
-  assert.equal((html.match(/class="product-card /g) || []).length, 6);
+  assert.equal((html.match(/class="product-card /g) || []).length, 0);
+  assert.equal((html.match(/class="free-card version-card/g) || []).length, 2);
   assert.doesNotMatch(
     html,
     /style="[^"]*opacity:0(?:;|")/,

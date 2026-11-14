@@ -28,83 +28,18 @@ export const products: Product[] = [
     description:
       "Explore the DevRealm automation tool for Anime Adventures. Check the current features, compatibility, and setup guide in the catalogue.",
   },
-  {
-    id: "vanguards",
-    name: "Anime Vanguards",
-    image: "/images/vanguards.png",
-    category: "Tower defense",
-    color: "blue",
-    tagline: "Put the everyday grind on autopilot.",
-    price: 14.99,
-    monthlyPrice: 2.99,
-    version: "0.44.112",
-    description:
-      "Explore the DevRealm automation tool for Anime Vanguards. Check the current features, compatibility, and setup guide in the catalogue.",
-  },
-  {
-    id: "expeditions",
-    name: "Anime Expeditions",
-    image: "/images/expeditions.png",
-    category: "Tower defense",
-    color: "purple",
-    tagline: "A little help for the long journey.",
-    price: 16.99,
-    monthlyPrice: 6.99,
-    version: "0.1.85",
-    description:
-      "Explore the DevRealm automation tool for Anime Expeditions. Check the current features, compatibility, and setup guide in the catalogue.",
-  },
-  {
-    id: "slayers",
-    name: "Slayers 2",
-    image: "/images/slayers.png",
-    category: "Adventure",
-    color: "red",
-    tagline: "Less repetition. More exploration.",
-    price: 4.99,
-    monthlyPrice: null,
-    version: "0.1.2",
-    description:
-      "Explore the DevRealm automation tool for Slayers 2. Check the current features, compatibility, and setup guide in the catalogue.",
-  },
-  {
-    id: "origins",
-    name: "Anime Origin",
-    image: "/images/origins.png",
-    category: "Tower defense",
-    color: "orange",
-    tagline: "Find a smarter way to keep moving.",
-    price: 4.99,
-    monthlyPrice: null,
-    version: "0.1.10",
-    description:
-      "Explore the DevRealm automation tool for Anime Origin. Check the current features, compatibility, and setup guide in the catalogue.",
-  },
-  {
-    id: "gpo",
-    name: "GPO",
-    image: "/images/gpo.png",
-    category: "Adventure",
-    color: "teal",
-    tagline: "Set sail with a simpler routine.",
-    price: 4.99,
-    monthlyPrice: null,
-    version: "0.2.5",
-    description:
-      "Explore the DevRealm automation tool for GPO. Check the current features, compatibility, and setup guide in the catalogue.",
-  },
 ];
 
 export const faqs = [
   {
     question: "How do I get started?",
     answer:
-      "Find the tool for your game, then open its catalogue page. Follow the download and setup guide there to get your routine ready.",
+      "Choose the free or premium version of our Anime Adventures tool, then visit our community for access details and setup guidance.",
   },
   {
     question: "Can I try a tool for free?",
     answer:
-      "Yes. The free tools section links to DevRealm Task and the available free versions. Check the official download page for current availability and features.",
+      "Yes. Use the free version button in Pricing to find downloads on GitHub. Our community can help you get started.",
   },
   {
     question: "Will a tool work on my device?",
@@ -112,9 +47,9 @@ export const faqs = [
       "Compatibility depends on the tool and version. Review the requirements and setup instructions on the help section before choosing a tool.",
   },
   {
-    question: "What is the difference between payment options?",
+    question: "Which version should I choose?",
     answer:
-      "Some tools list both monthly and one-time prices. Switch between the two to explore the catalogue snapshot, then confirm the current offer and terms in the catalogue.",
+      "Start with the free version to get to know the tool, or explore premium access. Our community can help you compare current features and confirm premium pricing.",
   },
   {
     question: "Where can I find help with setup?",
@@ -124,6 +59,6 @@ export const faqs = [
   {
     question: "Where do purchases and downloads happen?",
     answer:
-      "This catalogue previews available tools. Purchasing and downloads are not connected yet; check back for availability.",
+      "Download the free version from GitHub using the button in Pricing. Visit our community for premium access details. Purchases are not handled directly on this page.",
   },
 ];

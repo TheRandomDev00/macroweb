@@ -31,7 +31,7 @@ export function Community() {
                 <div className="community-orbit orbit-two" />
                 <span className="community-core">
                   <img
-                    src="/images/devrealm.svg"
+                    src="/images/image.png"
                     width="68"
                     height="68"
                     alt=""
@@ -54,7 +54,7 @@ export function Community() {
                 </span>
                 <span className="orbit-item item-four">
                   <img
-                    src="/images/vanguards.png"
+                    src="/images/adventures.png"
                     width="42"
                     height="42"
                     alt=""
@@ -78,8 +78,6 @@ export function Community() {
                 </p>
                 <a
                   href="#community"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="button button-discord"
                 >
                   <MessageCircle size={17} /> Find us on Discord{" "}
@@ -115,9 +113,7 @@ export function Community() {
               </p>
               <a
                 className="text-link"
-                href="#community"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#changelog"
               >
                 Explore the changelog <ArrowUpRight size={16} />
               </a>

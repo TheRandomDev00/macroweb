@@ -1,11 +1,14 @@
 import type { SceneLayout } from "./scene-layout";
 import {
   SCENE_IDLE_MS,
-  sceneCoastDistance,
-  SCENE_COAST_PX_PER_MS,
+  stepSceneMomentum,
+  SCENE_FRICTION_PER_MS,
+  SCENE_MAX_SCROLL_PX_PER_MS,
   SCENE_TRANSITION_MS,
   sceneGap,
   smoothSceneEase,
+  capSceneScroll,
+  sceneScrollTarget,
 } from "./scene-transitions";
 
 type Options = {
@@ -14,31 +17,28 @@ type Options = {
   render: () => void;
 };
 
-/** Native scrolling owns input; unfinished crossings finish at a fixed gentle speed. */
+/** Native scrolling owns input; crossing speed is bounded before scenes render. */
 export function createSceneMotion({ port, getLayout, render }: Options) {
-  let frame = 0,
-    idleTimer: ReturnType<typeof setTimeout> | null = null;
+  let frame = 0;
   let destroyed = false,
     touching = false,
     lastActivity = 0;
   let direction = 1;
   let expectedPosition = port.scrollTop;
   let lastPosition = port.scrollTop;
+  let lastScrollTime = performance.now();
+  let momentumFrame = 0;
+  let momentum: { from: number; to: number; position: number; velocity: number; time: number } | null = null;
   let animation: {
     origin: number;
     destination: () => number;
     started: number;
     duration: number;
-    linear: boolean;
   } | null = null;
   const enabled = () =>
     !destroyed && port.dataset.mode === "pinned" && Boolean(getLayout());
-  const clearIdle = () => {
-    if (idleTimer !== null) clearTimeout(idleTimer);
-    idleTimer = null;
-  };
   const markState = () => {
-    port.dataset.transition = animation
+    port.dataset.transition = animation || momentum
       ? "running"
       : getLayout() && sceneGap(getLayout()!, port.scrollTop)
         ? "scrolling"
@@ -49,8 +49,47 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     frame = 0;
     animation = null;
     lastPosition = port.scrollTop;
+    lastScrollTime = performance.now();
     port.removeAttribute("aria-busy");
     markState();
+  };
+  const clearMomentum = () => {
+    cancelAnimationFrame(momentumFrame);
+    momentumFrame = 0;
+    momentum = null;
+  };
+  const drainMomentum = (time: number) => {
+    momentumFrame = 0;
+    if (!enabled() || !momentum) {
+      clearMomentum();
+      markState();
+      return;
+    }
+    const layout = getLayout()!;
+    const start = layout.scenes[momentum.from].start + layout.scenes[momentum.from].hold;
+    const end = layout.scenes[momentum.to].start;
+    // A resize must not carry an old crossing into a chapter's reading area.
+    if (lastPosition < start - 1 || lastPosition > end + 1) {
+      clearMomentum();
+      markState();
+      return;
+    }
+    const destination = direction > 0 ? end : start;
+    const remaining = destination - momentum.position;
+    const completing = !touching && time - lastActivity >= SCENE_IDLE_MS;
+    const next = stepSceneMomentum(momentum.velocity, time - momentum.time,
+      completing ? remaining : undefined);
+    momentum.velocity = next.velocity;
+    momentum.time = time;
+    momentum.position = Math.max(start, Math.min(end, momentum.position + next.distance));
+    if (Math.abs(destination - momentum.position) <= 0.5) momentum.position = destination;
+    port.scrollTop = momentum.position;
+    expectedPosition = lastPosition = port.scrollTop;
+    lastScrollTime = time;
+    if (momentum.position === destination) clearMomentum();
+    markState();
+    render();
+    if (!destroyed && momentum) momentumFrame = requestAnimationFrame(drainMomentum);
   };
   const tick = (time: number) => {
     if (!enabled() || !animation) {
@@ -58,17 +97,11 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       return;
     }
     const destination = animation.destination();
-    const distance = Math.abs(destination - animation.origin);
-    const phase = animation.linear
-      ? Math.min(
-          1,
-          sceneCoastDistance(time - animation.started) / Math.max(1, distance),
-        )
-      : Math.min(1, (time - animation.started) / animation.duration);
+    const phase = Math.min(1, (time - animation.started) / animation.duration);
     port.scrollTop =
       animation.origin +
       (destination - animation.origin) *
-        (animation.linear ? phase : smoothSceneEase(phase));
+        smoothSceneEase(phase);
     expectedPosition = port.scrollTop;
     lastPosition = port.scrollTop;
     render();
@@ -83,10 +116,8 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
   const animateTo = (
     destination: () => number,
     duration: number,
-    linear = false,
   ) => {
     cancel();
-    clearIdle();
     if (Math.abs(port.scrollTop - destination()) < 1) {
       markState();
       render();
@@ -97,47 +128,19 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       destination,
       started: performance.now(),
       duration,
-      linear,
     };
+    expectedPosition = port.scrollTop;
     markState();
     frame = requestAnimationFrame(tick);
   };
-  const settle = () => {
-    idleTimer = null;
-    if (!enabled() || animation || touching) return;
-    const quiet = performance.now() - lastActivity;
-    if (quiet < SCENE_IDLE_MS) {
-      idleTimer = setTimeout(settle, SCENE_IDLE_MS - quiet);
-      return;
-    }
-    const layout = getLayout()!;
-    const gap = sceneGap(layout, port.scrollTop);
-    if (!gap) {
-      markState();
-      return;
-    }
-    const forward = direction > 0;
-    const destination = () => {
-      const latest = getLayout()!;
-      return forward
-        ? latest.scenes[gap.to].start
-        : latest.scenes[gap.from].start + latest.scenes[gap.from].hold;
-    };
-    // Preserve direction even before the midpoint; do not snap to the nearer chapter.
-    const duration =
-      Math.abs(destination() - port.scrollTop) / SCENE_COAST_PX_PER_MS;
-    animateTo(destination, duration, true);
-  };
   const schedule = () => {
-    clearIdle();
+    if (!enabled() || animation) return;
+    const gap = sceneGap(getLayout()!, port.scrollTop);
+    if (!momentum && gap) {
+      momentum = { ...gap, position: port.scrollTop, velocity: 0, time: performance.now() };
+    }
+    if (momentum && !momentumFrame) momentumFrame = requestAnimationFrame(drainMomentum);
     markState();
-    if (
-      enabled() &&
-      !animation &&
-      !touching &&
-      sceneGap(getLayout()!, port.scrollTop)
-    )
-      idleTimer = setTimeout(settle, SCENE_IDLE_MS);
   };
   const activity = () => {
     if (!enabled()) return;
@@ -154,11 +157,14 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       Math.abs(event.deltaY) >= Math.abs(event.deltaX) &&
       event.deltaY
     ) {
+      if (momentum && Math.sign(event.deltaY) !== direction)
+        clearMomentum();
       direction = Math.sign(event.deltaY);
       activity();
     }
   };
   const touchStart = () => {
+    clearMomentum();
     touching = true;
     activity();
   };
@@ -194,11 +200,16 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
         "End",
         " ",
       ].includes(event.key)
-    )
+    ) {
+      clearMomentum();
       activity();
+    }
   };
   const pointerdown = () => {
-    if (animation) activity();
+    if (animation || momentum) {
+      clearMomentum();
+      activity();
+    }
   };
   const scrollEnd = () => {
     if (!animation) schedule();
@@ -209,11 +220,13 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
       const scene = getLayout()!.scenes[index];
       return scene.start + Math.max(0, Math.min(scene.travel, offset));
     };
-    clearIdle();
+    clearMomentum();
     cancel();
     if (smooth) animateTo(destination, SCENE_TRANSITION_MS);
     else {
       port.scrollTop = destination();
+      lastPosition = port.scrollTop;
+      lastScrollTime = performance.now();
       markState();
       render();
     }
@@ -237,14 +250,37 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
         const delta = port.scrollTop - lastPosition;
         if (delta) direction = Math.sign(delta);
         const now = performance.now();
+        const origin = lastPosition;
+        const previousTime = lastScrollTime;
         cancel();
+        lastPosition = origin;
+        lastScrollTime = previousTime;
         lastActivity = now;
       }
       const now = performance.now(),
         delta = port.scrollTop - lastPosition;
       if (delta !== 0) {
+        if (momentum && Math.sign(delta) !== direction)
+          clearMomentum();
         direction = Math.sign(delta);
+        const layout = getLayout()!;
+        const requested = sceneScrollTarget(layout, lastPosition, Math.max(0, Math.min(
+          layout.maxScroll, lastPosition + delta,
+        )));
+        port.scrollTop = capSceneScroll(
+          layout, lastPosition, requested, now - lastScrollTime,
+        );
+        const gap = sceneGap(layout, port.scrollTop + direction * 0.01);
+        if (gap && (direction > 0
+          ? requested > layout.scenes[gap.from].start + layout.scenes[gap.from].hold
+          : requested < layout.scenes[gap.to].start)) {
+          const velocity = (momentum?.velocity ?? 0) + delta * SCENE_FRICTION_PER_MS;
+          momentum = { ...gap, position: port.scrollTop, time: now,
+            velocity: Math.max(-SCENE_MAX_SCROLL_PX_PER_MS, Math.min(SCENE_MAX_SCROLL_PX_PER_MS, velocity)) };
+        } else clearMomentum();
+        expectedPosition = port.scrollTop;
         lastPosition = port.scrollTop;
+        lastScrollTime = now;
         lastActivity = now;
       }
       schedule();
@@ -253,7 +289,7 @@ export function createSceneMotion({ port, getLayout, render }: Options) {
     destroy() {
       if (destroyed) return;
       destroyed = true;
-      clearIdle();
+      clearMomentum();
       cancel();
       delete port.dataset.transition;
       port.removeEventListener("wheel", wheel);

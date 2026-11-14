@@ -94,8 +94,6 @@ export function ProductDialog({
           <a
             className="button button-primary"
             href="#store"
-            target="_blank"
-            rel="noopener noreferrer"
           >
             Continue to catalogue <ArrowUpRight size={16} />
           </a>

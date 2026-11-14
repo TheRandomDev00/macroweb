@@ -25,28 +25,11 @@ export function Hero() {
               REALM<span className="title-sparkle">✦</span>
             </span>
           </h1>
-          <Entrance delay={0.25}>
+          <Entrance delay={0}>
             <p className="hero-description">
-              Your time is worth more than the grind.
-              <br className="desktop-break" /> Automate your games, simplify the
-              routine,
-              <br className="desktop-break" /> and get back to the good part.
+              Roblox Anime Adventures automation
+              <br className="desktop-break" /> Like steroids for Roblox.
             </p>
-          </Entrance>
-          <Entrance delay={0.4}>
-            <div className="hero-actions">
-              <a className="button button-primary" href="#store">
-                Find your tools <ArrowRight size={17} />
-              </a>
-              <a
-                className="button button-secondary"
-                href="#community"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Join the community <ArrowUpRight size={16} />
-              </a>
-            </div>
           </Entrance>
           <div className="hero-perks">
             <span>
@@ -62,7 +45,7 @@ export function Hero() {
         </div>
         <div className="hero-visual">
           <div className="visual-kicker">
-            <span className="tiny-cross">+</span> BUILT AROUND THE WAY YOU PLAY{" "}
+            <span className="tiny-cross">+</span> {" "}
             <Sparkles size={12} />
           </div>
           <Entrance delay={0.3}>

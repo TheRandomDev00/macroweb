@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { buildSceneLayout, sampleScene } from "../src/lib/scene-layout.ts";
 import {
   SCENE_IDLE_MS,
+  capSceneScroll,
+  SCENE_MAX_SCROLL_PX_PER_MS,
+  stepSceneMomentum,
   sceneGap,
   sceneLanding,
   sceneSettleTarget,
@@ -10,8 +13,32 @@ import {
 } from "../src/lib/scene-transitions.ts";
 const layout = buildSceneLayout([1600, 2600, 1800], 844);
 
+test("violent scrolling cannot skip transition gaps in either direction", () => {
+  const start = layout.scenes[0].hold;
+  const end = layout.scenes[1].start;
+  const speed = SCENE_MAX_SCROLL_PX_PER_MS;
+  assert.equal(capSceneScroll(layout, 0, layout.maxScroll, 10000), start + 32 * speed);
+  assert.equal(capSceneScroll(layout, layout.maxScroll, 0, 16),
+    layout.scenes[2].start - 16 * speed);
+  assert.equal(capSceneScroll(layout, start + 20, layout.maxScroll, 10), start + 20 + 10 * speed);
+  assert.equal(capSceneScroll(layout, end - 20, 0, 10), end - 20 - 10 * speed);
+  assert.equal(capSceneScroll(layout, start + 20, start + 22, 10), start + 22);
+  assert.equal(capSceneScroll(layout, 0, 100, 16), 100);
+  assert.equal(capSceneScroll(layout, end + 100, end + 20, 16), end + 20);
+});
+
+test("a single input update cannot consume an entire crossing, even after a pause", () => {
+  for (const viewport of [390, 844, 1280]) {
+    const current = buildSceneLayout([1600, 2600], viewport);
+    const start = current.scenes[0].hold;
+    const end = current.scenes[1].start;
+    assert.ok(capSceneScroll(current, 0, current.maxScroll, 10000) < end);
+    assert.ok(capSceneScroll(current, current.maxScroll, 0, 10000) > start);
+  }
+});
+
 test("only unfinished crossings need idle settling; reading positions remain untouched", () => {
-  assert.equal(SCENE_IDLE_MS, 150);
+  assert.equal(SCENE_IDLE_MS, 20);
   for (let i = 0; i < layout.scenes.length; i++) {
     const scene = layout.scenes[i];
     assert.ok(Number.isInteger(scene.start));
@@ -80,19 +107,23 @@ test("settling ease decelerates toward its endpoint and stays monotonic", () => 
   }
 });
 
-test("automatic scrolling accelerates smoothly to 240px/s", async () => {
-  const { sceneCoastDistance } =
-    await import("../src/lib/scene-transitions.ts");
-  assert.equal(sceneCoastDistance(0), 0);
-  assert.ok(sceneCoastDistance(10) < 0.01);
-  assert.equal(sceneCoastDistance(300), 36);
-  assert.ok(
-    Math.abs(sceneCoastDistance(1300) - sceneCoastDistance(300) - 240) < 1e-9,
-  );
-  const step = 0.01;
-  assert.ok(
-    Math.abs(
-      (sceneCoastDistance(300) - sceneCoastDistance(300 - step)) / step - 0.24,
-    ) < 0.0001,
-  );
+test("friction decays velocity consistently across frame rates", () => {
+  const full = stepSceneMomentum(0.8, 32);
+  const first = stepSceneMomentum(0.8, 16);
+  const second = stepSceneMomentum(first.velocity, 16);
+  assert.ok(full.velocity > 0 && full.velocity < 0.8);
+  assert.ok(Math.abs(full.velocity - second.velocity) < 1e-10);
+  assert.ok(Math.abs(full.distance - first.distance - second.distance) < 1e-10);
+});
+
+test("completion force starts gently and respects the speed cap", () => {
+  const first = stepSceneMomentum(0, 16, 300);
+  assert.ok(first.velocity > 0 && first.velocity < 0.24);
+  assert.ok(first.distance < 1);
+  for (const velocity of [-100, -0.8, 0, 0.8, 100]) {
+    const next = stepSceneMomentum(velocity, 10000, 300);
+    assert.ok(Math.abs(next.velocity) <= 0.8);
+    assert.ok(Math.abs(next.distance) <= 0.8 * 32);
+  }
+  assert.ok(stepSceneMomentum(0, 16, -300).distance < 0);
 });

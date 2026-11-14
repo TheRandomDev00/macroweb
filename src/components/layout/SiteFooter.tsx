@@ -1,5 +1,6 @@
 import { ArrowUp, ArrowUpRight, MessageCircle, Youtube } from "lucide-react";
 import { Brand } from "@/components/ui/Brand";
+import Link from "next/link";
 export function SiteFooter() {
   return (
     <footer className="site-footer">
@@ -14,16 +15,12 @@ export function SiteFooter() {
             <div className="footer-socials">
               <a
                 href="#community"
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label="DevRealm Discord"
               >
                 <MessageCircle size={18} />
               </a>
               <a
                 href="#community"
-                target="_blank"
-                rel="noopener noreferrer"
                 aria-label="DevRealm YouTube"
               >
                 <Youtube size={19} />
@@ -32,8 +29,8 @@ export function SiteFooter() {
           </div>
           <div className="footer-link-group">
             <h2>EXPLORE</h2>
-            <a href="#store">Premium tools</a>
-            <a href="#free-tools">Free tools</a>
+            <a href="#premium-tools">Premium version</a>
+            <a href="#free-tools">Free version</a>
             <a href="#how-it-works">How it works</a>
             <a href="#faq">FAQ</a>
           </div>
@@ -41,32 +38,24 @@ export function SiteFooter() {
             <h2>DEVREALM</h2>
             <a
               href="#how-it-works"
-              target="_blank"
-              rel="noopener noreferrer"
             >
               Guides <ArrowUpRight size={12} />
             </a>
             <a
-              href="#community"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#changelog"
             >
               Updates <ArrowUpRight size={12} />
             </a>
             <a
-              href="#free-tools"
+              href="https://github.com/TheRandomDev00/NITMASAAMacroFree/releases"
               target="_blank"
               rel="noopener noreferrer"
             >
               Downloads <ArrowUpRight size={12} />
             </a>
-            <a
-              href="#faq"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Link href="/terms/">
               Terms of service <ArrowUpRight size={12} />
-            </a>
+            </Link>
           </div>
           <a className="back-to-top" href="#top" aria-label="Back to top">
             <ArrowUp size={19} />
@@ -75,10 +64,9 @@ export function SiteFooter() {
         </div>
         <div className="footer-bottom">
           <p>© 2026 DevRealm.</p>
+          <Link href="/terms/">Terms of Service</Link>
           <a
             href="#store"
-            target="_blank"
-            rel="noopener noreferrer"
           >
             Explore DevRealm <ArrowUpRight size={12} />
           </a>

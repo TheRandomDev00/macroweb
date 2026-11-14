@@ -6,7 +6,7 @@ import { Brand } from "@/components/ui/Brand";
 
 const links = [
   { label: "About", href: "#about" },
-  { label: "Store", href: "#store" },
+  { label: "Versions", href: "#store" },
   { label: "How it works", href: "#how-it-works" },
   { label: "Community", href: "#community" },
   { label: "FAQ", href: "#faq" },
@@ -47,7 +47,7 @@ export function SiteHeader() {
         </nav>
         <a
           className="header-community"
-          href="#community"
+          href="https://discord.gg/67gK8f5H"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -78,7 +78,7 @@ export function SiteHeader() {
           </a>
         ))}
         <a
-          href="#community"
+          href="https://discord.gg/67gK8f5H"
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => setOpen(false)}
