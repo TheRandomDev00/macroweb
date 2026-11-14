@@ -17,7 +17,7 @@ import {
   sampleScene,
   type SceneLayout,
 } from "@/lib/scene-layout";
-import { createSceneMotion } from "@/lib/scene-motion";
+import { createNativeSceneMotion, createSceneMotion } from "@/lib/scene-motion";
 import { resolveSceneViewport } from "@/lib/scene-viewport";
 import { SceneProgressContext, SectionMotionContext } from "./SceneContext";
 import { usePageScroll } from "./PageScrollProvider";
@@ -307,15 +307,17 @@ export function SceneStack({
       history.pushState(null, "", url.hash);
       goTo(destination.index, true, destination.offset);
     };
-    motion = createSceneMotion({
-      port,
-      getLayout: () => layout.current,
-      render: paint,
-    });
+    const updateMotion = () => {
+      motion?.destroy();
+      const createMotion = lightEffects.matches ? createNativeSceneMotion : createSceneMotion;
+      motion = createMotion({ port, getLayout: () => layout.current, render: paint });
+      queueMeasure();
+    };
+    updateMotion();
     port.addEventListener("scroll", queuePaint, { passive: true });
     port.addEventListener("load", queueMeasure, true);
     window.addEventListener("resize", queueMeasure);
-    lightEffects.addEventListener("change", queueMeasure);
+    lightEffects.addEventListener("change", updateMotion);
     window.visualViewport?.addEventListener("resize", queueMeasure);
     window.addEventListener("pageshow", queueMeasure);
     window.addEventListener("hashchange", restoreHash);
@@ -333,7 +335,7 @@ export function SceneStack({
       port.removeEventListener("scroll", queuePaint);
       port.removeEventListener("load", queueMeasure, true);
       window.removeEventListener("resize", queueMeasure);
-      lightEffects.removeEventListener("change", queueMeasure);
+      lightEffects.removeEventListener("change", updateMotion);
       window.visualViewport?.removeEventListener("resize", queueMeasure);
       window.removeEventListener("pageshow", queueMeasure);
       window.removeEventListener("hashchange", restoreHash);

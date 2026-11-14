@@ -17,6 +17,35 @@ type Options = {
   render: () => void;
 };
 
+/** Mobile leaves swipes, inertia, and direction changes entirely to the browser. */
+export function createNativeSceneMotion({ port, getLayout }: Options) {
+  let destroyed = false;
+  return {
+    navigate(index: number, smooth = true, offset = 0) {
+      if (destroyed || port.dataset.mode !== "pinned") return;
+      const scene = getLayout()?.scenes[index];
+      if (!scene) return;
+      port.scrollTo({
+        top: scene.start + Math.max(0, Math.min(scene.travel, offset)),
+        behavior: smooth ? "smooth" : "instant",
+      });
+    },
+    observeScroll() {
+      if (!destroyed && port.dataset.mode === "pinned") {
+        const layout = getLayout();
+        port.dataset.transition = layout && sceneGap(layout, port.scrollTop)
+          ? "scrolling"
+          : "idle";
+      }
+      return false;
+    },
+    destroy() {
+      destroyed = true;
+      delete port.dataset.transition;
+    },
+  };
+}
+
 /** Native scrolling owns input; crossing speed is bounded before scenes render. */
 export function createSceneMotion({ port, getLayout, render }: Options) {
   let frame = 0;

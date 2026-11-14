@@ -11,7 +11,7 @@ const compiled = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 ).outputText;
 
-function fixture() {
+function fixture(native = false) {
   const layout = buildSceneLayout([1000, 1000, 1000], 900);
   let now = 1000, id = 0, position = 0, writes = 0;
   const frames = new Map(), timers = new Map(), listeners = new Map();
@@ -22,6 +22,7 @@ function fixture() {
     addEventListener(name, listener) { listeners.set(name, listener); },
     removeEventListener(name) { listeners.delete(name); },
     removeAttribute() {},
+    scrollTo({ top }) { this.scrollTop = top; },
   };
   const exports = {};
   vm.runInNewContext(compiled, {
@@ -33,7 +34,8 @@ function fixture() {
     setTimeout: (callback, delay) => { timers.set(++id, { callback, at: now + delay }); return id; },
     clearTimeout: key => timers.delete(key),
   });
-  const motion = exports.createSceneMotion({ port, getLayout: () => layout, render() {} });
+  const createMotion = native ? exports.createNativeSceneMotion : exports.createSceneMotion;
+  const motion = createMotion({ port, getLayout: () => layout, render() {} });
   function step(elapsed = 16) {
     const before = position;
     now += elapsed;
@@ -63,6 +65,31 @@ function fixture() {
   }
   return { layout, port, motion, step, input, finish, listeners, touch, writes: () => writes };
 }
+
+test('mobile scroll stays native across gaps, direction changes, and large flings', () => {
+  const state = fixture(true);
+  assert.equal(state.listeners.size, 0, 'Mobile must not intercept scroll input');
+  for (const position of [state.layout.maxScroll, state.layout.scenes[1].start - 50, 0]) {
+    state.port.scrollTop = position;
+    const writes = state.writes();
+    state.motion.observeScroll();
+    state.finish();
+    assert.equal(state.port.scrollTop, position, 'Mobile must not cap, snap, or settle native scrolling');
+    assert.equal(state.writes(), writes, 'Observing mobile scroll must never write scrollTop');
+  }
+});
+
+test('mobile section navigation respects offsets and stops after teardown', () => {
+  const state = fixture(true);
+  state.motion.navigate(1, false, 100);
+  assert.equal(state.port.scrollTop, state.layout.scenes[1].start + 100);
+  state.motion.navigate(1, true, Infinity);
+  assert.equal(state.port.scrollTop, state.layout.scenes[1].start + state.layout.scenes[1].travel);
+  state.motion.destroy();
+  const before = state.port.scrollTop;
+  state.motion.navigate(0);
+  assert.equal(state.port.scrollTop, before);
+});
 
 test('large and small gestures both finish the current transition', () => {
   const fast = fixture(), slow = fixture();
