@@ -22,7 +22,7 @@ const versions = [
     name: "Premium",
     icon: Crown,
     tagline: "",
-    price: "3 USD",
+    price: "4 USD",
     description:
       "Advanced smart features for maximized efficiency",
     action: "Explore premium",

@@ -5,8 +5,9 @@ import { useScrollThreshold } from "@/hooks/useScrollThreshold";
 import { Brand } from "@/components/ui/Brand";
 
 const links = [
+  { label : "Pricing", href:"#store"},
   { label: "About", href: "#about" },
-  { label: "Versions", href: "#store" },
+  { label: "Versions", href: "#changelog" },
   { label: "How it works", href: "#how-it-works" },
   { label: "Community", href: "#community" },
   { label: "FAQ", href: "#faq" },

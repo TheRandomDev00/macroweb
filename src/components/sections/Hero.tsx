@@ -31,6 +31,10 @@ export function Hero() {
               <br className="desktop-break" /> Like steroids for Roblox.
             </p>
           </Entrance>
+
+          <a className="button button-primary to-purchase" href="#store">
+            <span>Purchase macro</span><ArrowUpRight size={17} />
+          </a>
           <div className="hero-perks">
             <span>
               <Check size={13} /> Regularly updated
